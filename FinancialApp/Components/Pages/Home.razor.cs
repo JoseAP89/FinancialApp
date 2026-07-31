@@ -31,7 +31,7 @@ namespace FinancialApp.Components.Pages
 
         private void UpdateResult()
         {
-            if (Model.Amount <= 0 || Model.Period <= 0)
+            if (Model.Amount <= 0 && Model.Period <= 0)
             {
                 ResultText = string.Empty;
                 return;
@@ -68,9 +68,7 @@ namespace FinancialApp.Components.Pages
 
     public class LoanModel
     {
-        [Required]
-        [Range(0.01, double.MaxValue, ErrorMessage = "Amount must be greater than 0")]
-        public decimal Amount { get; set; }
+        public decimal Amount { get; set; } = 0m;
 
         [Range(0, double.MaxValue, ErrorMessage = "Deposit must be non-negative")]
         public decimal Deposit { get; set; }
