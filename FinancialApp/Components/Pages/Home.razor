@@ -1,5 +1,40 @@
 ﻿@page "/"
 
-<h1>Hello, world!</h1>
+<div class="center-container">
+    <div class="card">
+        <h2>Annuity Calculator</h2>
 
-Welcome to your new app.
+        <EditForm EditContext="@EditContext" OnValidSubmit="HandleValidSubmit">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+
+            <div class="form-row">
+                <label for="amount">Initial Amount</label>
+                <InputNumber id="amount" @bind-Value="Model.Amount" class="input" step="0.01" />
+            </div>
+
+            <div class="form-row">
+                <label for="deposit">Deposit</label>
+                <InputNumber id="deposit" @bind-Value="Model.Deposit" class="input" step="0.01" />
+            </div>
+
+            <div class="form-row">
+                <label for="rate">Annual interest rate</label>
+                <InputNumber id="rate" @bind-Value="Model.AnnualInterestRate" class="input" step="0.01" />
+            </div>
+
+            <div class="form-row">
+                <label for="period">Period</label>
+                <InputNumber id="period" @bind-Value="Model.Period" class="input" />
+                <small class="help-text">Period must be in months</small>
+            </div>
+
+            <button type="submit" class="btn">Calculate</button>
+        </EditForm>
+
+        @if (!string.IsNullOrEmpty(ResultText))
+        {
+            <p class="result">@ResultText</p>
+        }
+    </div>
+</div>
