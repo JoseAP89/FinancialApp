@@ -8,7 +8,7 @@ namespace FinancialApp.Components.Pages
     public partial class Home : ComponentBase, IDisposable
     {
         protected LoanModel Model { get; set; } = new LoanModel();
-        protected EditContext EditContext { get; set; }
+        protected EditContext EditContext { get; set; } = null!;
         protected string ResultText { get; set; } = string.Empty;
 
         protected override void OnInitialized()
@@ -18,7 +18,7 @@ namespace FinancialApp.Components.Pages
             UpdateResult();
         }
 
-        private void HandleFieldChanged(object sender, FieldChangedEventArgs e)
+        private void HandleFieldChanged(object? sender, FieldChangedEventArgs e)
         {
             // react to every field change (similar to reactive forms)
             UpdateResult();
