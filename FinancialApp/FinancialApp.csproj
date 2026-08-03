@@ -27,7 +27,6 @@
 		<JavaOptions>-Xmx1G</JavaOptions>
 		<AndroidEnableMultiDex>true</AndroidEnableMultiDex>
 		<AndroidDexTool>d8</AndroidDexTool>
-		<AndroidLinkTool>r8</AndroidLinkTool>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -43,6 +42,7 @@
 		<PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiVersion)" />
 		<PackageReference Include="Microsoft.AspNetCore.Components.WebView.Maui" Version="$(MauiVersion)" />
 		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="10.0.0" />
+		<PackageReference Include="Xamarin.AndroidX.Startup.StartupRuntime" Version="1.2.0.5" />
 	</ItemGroup>
 
 	<PropertyGroup Condition=" '$(Configuration)' == 'Release' AND '$(TargetFramework)' == 'net10.0-android' ">
@@ -61,6 +61,18 @@
 
 		<!-- Ensure APK format -->
 		<AndroidPackageFormat>apk</AndroidPackageFormat>
+
+		<!-- Release-specific Android build settings: use R8 and keep primary-dex entries -->
+		<AndroidLinkTool>r8</AndroidLinkTool>
+		<AndroidLinkMode>SdkOnly</AndroidLinkMode>
+		<AndroidMultiDexKeepProguard>multidex-keep.pro</AndroidMultiDexKeepProguard>
+	</PropertyGroup>
+
+	<PropertyGroup Condition=" '$(Configuration)' == 'Debug' AND '$(TargetFramework)' == 'net10.0-android' ">
+		<!-- Debug-friendly settings to avoid linker/DEX issues during local debugging -->
+		<AndroidLinkMode>None</AndroidLinkMode>
+		<!-- No multidex keep file in Debug to avoid interfering with the debugger; keep multidex enabled globally if needed -->
+		<AndroidMultiDexKeepProguard></AndroidMultiDexKeepProguard>
 	</PropertyGroup>
 
 </Project>

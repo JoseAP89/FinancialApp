@@ -1,0 +1,2 @@
+-keep class com.microsoft.maui.PlatformDispatcher { *; }
+-keep class com.microsoft.maui.** { *; }
