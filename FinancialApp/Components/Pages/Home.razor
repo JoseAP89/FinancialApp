@@ -10,12 +10,14 @@
 
             <div class="form-row">
                 <label for="amount">Initial Amount</label>
-                <InputNumber id="amount" @bind-Value="Model.Amount" class="input" step="0.01" />
+                <!-- text input to allow currency formatting on blur -->
+                <input id="amount" class="input" @bind="AmountDisplay" @onfocus="AmountFocus" @onblur="AmountBlur" />
             </div>
 
             <div class="form-row">
                 <label for="deposit">Deposit</label>
-                <InputNumber id="deposit" @bind-Value="Model.Deposit" class="input" step="0.01" />
+                <!-- use a text input to allow currency formatting on blur -->
+                <input id="deposit" class="input" @bind="DepositDisplay" @onfocus="DepositFocus" @onblur="DepositBlur" />
             </div>
 
             <div class="form-row">
@@ -55,13 +57,14 @@
                                     <path d="M10 11v6M14 11v6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
                                 </svg>
                             </button>
-                            <div class="form-row" @key=@($"newDeposit{i}")>
-                                <label for=@($"newDeposit{i}")>New Deposit @(i+1)</label>
-                                <InputNumber id=@($"newDeposit{i}") @bind-Value="ad.Amount" class="input" step="0.01" />
+                            <div class="form-row" @key=@($"newDeposit{idx}")>
+                                <label for=@($"newDeposit{idx}")>New Deposit @(idx+1)</label>
+                                <!-- text input to allow currency formatting on blur for additional deposits -->
+                                <input id=@($"newDeposit{idx}") class="input" @bind="AdditionalDepositDisplays[idx]" @onfocus="() => AdditionalDepositFocus(idx)" @onblur="() => AdditionalDepositBlur(idx)" />
                             </div>
-                            <div class="form-row" @key=@($"newPeriod{i}")>
-                                <label for=@($"newPeriod{i}")>New period @(i+1)</label>
-                                <InputNumber id=@($"newPeriod{i}") @bind-Value="ad.Period" class="input" />
+                            <div class="form-row" @key=@($"newPeriod{idx}")>
+                                <label for=@($"newPeriod{idx}")>New period @(idx+1)</label>
+                                <InputNumber id=@($"newPeriod{idx}") @bind-Value="ad.Period" class="input" />
                             </div>
                         </div>
                     }

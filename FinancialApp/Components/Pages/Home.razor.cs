@@ -1,7 +1,9 @@
 using System;
 using System.ComponentModel.DataAnnotations;
+using System.Linq;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Forms;
+// no direct using for Blazor web events to avoid ambiguity with MAUI FocusEventArgs
 
 namespace FinancialApp.Components.Pages
 {
@@ -12,11 +14,19 @@ namespace FinancialApp.Components.Pages
         protected List<AdditionalDeposit> AdditionalDeposits { get; set; } = new List<AdditionalDeposit>();
         protected decimal FutureValue { get; set; } = 0m;
         protected decimal AdditionalDepositsTotal { get; set; } = 0m;
+        // display strings for inputs that will show formatted currency on blur
+        protected string AmountDisplay { get; set; } = string.Empty;
+        protected string DepositDisplay { get; set; } = string.Empty;
+        protected List<string> AdditionalDepositDisplays { get; set; } = new List<string>();
 
         protected override void OnInitialized()
         {
             EditContext = new EditContext(Model);
             EditContext.OnFieldChanged += HandleFieldChanged;
+            // initialize display strings from model
+            AmountDisplay = Model.Amount.ToString("C");
+            DepositDisplay = Model.Deposit.ToString("C");
+            AdditionalDepositDisplays = AdditionalDeposits.Select(ad => ad.Amount.ToString("C")).ToList();
             UpdateResult();
         }
 
@@ -34,6 +44,7 @@ namespace FinancialApp.Components.Pages
         protected void AddAdditionalDeposit()
         {
             AdditionalDeposits.Add(new AdditionalDeposit());
+            AdditionalDepositDisplays.Add(0m.ToString("C"));
             UpdateResult();
         }
 
@@ -42,8 +53,87 @@ namespace FinancialApp.Components.Pages
             if (index >= 0 && index < AdditionalDeposits.Count)
             {
                 AdditionalDeposits.RemoveAt(index);
+                if (index >= 0 && index < AdditionalDepositDisplays.Count)
+                {
+                    AdditionalDepositDisplays.RemoveAt(index);
+                }
                 UpdateResult();
             }
+        }
+
+        // focus/blur handlers for deposit formatting
+        protected System.Threading.Tasks.Task DepositFocus(global::Microsoft.AspNetCore.Components.Web.FocusEventArgs e)
+        {
+            // show raw numeric value for editing
+            DepositDisplay = Model.Deposit != 0m ? Model.Deposit.ToString("G") : string.Empty;
+            return System.Threading.Tasks.Task.CompletedTask;
+        }
+
+        protected System.Threading.Tasks.Task DepositBlur(global::Microsoft.AspNetCore.Components.Web.FocusEventArgs e)
+        {
+            // try to parse the entered value (allow currency symbols)
+            if (TryParseCurrency(DepositDisplay, out var value))
+            {
+                Model.Deposit = value;
+                // notify edit context so validations can run
+                EditContext?.NotifyFieldChanged(new FieldIdentifier(Model, nameof(Model.Deposit)));
+            }
+            // format back to currency for display
+            DepositDisplay = Model.Deposit.ToString("C");
+            UpdateResult();
+            return System.Threading.Tasks.Task.CompletedTask;
+        }
+
+        protected System.Threading.Tasks.Task AmountFocus(global::Microsoft.AspNetCore.Components.Web.FocusEventArgs e)
+        {
+            // show raw numeric value for editing
+            AmountDisplay = Model.Amount != 0m ? Model.Amount.ToString("G") : string.Empty;
+            return System.Threading.Tasks.Task.CompletedTask;
+        }
+
+        protected System.Threading.Tasks.Task AmountBlur(global::Microsoft.AspNetCore.Components.Web.FocusEventArgs e)
+        {
+            // try to parse the entered value (allow currency symbols)
+            if (TryParseCurrency(AmountDisplay, out var value))
+            {
+                Model.Amount = value;
+                // notify edit context so validations can run
+                EditContext?.NotifyFieldChanged(new FieldIdentifier(Model, nameof(Model.Amount)));
+            }
+            // format back to currency for display
+            AmountDisplay = Model.Amount.ToString("C");
+            UpdateResult();
+            return System.Threading.Tasks.Task.CompletedTask;
+        }
+
+        protected void AdditionalDepositFocus(int index)
+        {
+            if (index >= 0 && index < AdditionalDeposits.Count && index < AdditionalDepositDisplays.Count)
+            {
+                var val = AdditionalDeposits[index].Amount;
+                AdditionalDepositDisplays[index] = val != 0m ? val.ToString("G") : string.Empty;
+            }
+        }
+
+        protected void AdditionalDepositBlur(int index)
+        {
+            if (index < 0 || index >= AdditionalDeposits.Count) return;
+            if (index < 0 || index >= AdditionalDepositDisplays.Count) return;
+            var display = AdditionalDepositDisplays[index];
+            if (TryParseCurrency(display, out var value))
+            {
+                AdditionalDeposits[index].Amount = value;
+            }
+            AdditionalDepositDisplays[index] = AdditionalDeposits[index].Amount.ToString("C");
+            UpdateResult();
+        }
+
+        private bool TryParseCurrency(string? input, out decimal value)
+        {
+            value = 0m;
+            if (string.IsNullOrWhiteSpace(input)) return true;
+            // allow currency and number styles
+            return decimal.TryParse(input, System.Globalization.NumberStyles.Currency | System.Globalization.NumberStyles.Number, System.Globalization.CultureInfo.CurrentCulture, out value);
         }
 
         private void UpdateResult()
