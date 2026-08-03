@@ -9,7 +9,9 @@ namespace FinancialApp.Components.Pages
     {
         protected LoanModel Model { get; set; } = new LoanModel();
         protected EditContext EditContext { get; set; } = null!;
-        protected string ResultText { get; set; } = string.Empty;
+        protected List<AdditionalDeposit> AdditionalDeposits { get; set; } = new List<AdditionalDeposit>();
+        protected decimal FutureValue { get; set; } = 0m;
+        protected decimal AdditionalDepositsTotal { get; set; } = 0m;
 
         protected override void OnInitialized()
         {
@@ -29,11 +31,25 @@ namespace FinancialApp.Components.Pages
             UpdateResult();
         }
 
+        protected void AddAdditionalDeposit()
+        {
+            AdditionalDeposits.Add(new AdditionalDeposit());
+            UpdateResult();
+        }
+
+        protected void RemoveAdditionalDeposit(int index)
+        {
+            if (index >= 0 && index < AdditionalDeposits.Count)
+            {
+                AdditionalDeposits.RemoveAt(index);
+                UpdateResult();
+            }
+        }
+
         private void UpdateResult()
         {
             if (Model.Amount <= 0 && Model.Period <= 0)
             {
-                ResultText = string.Empty;
                 return;
             }
             // Future value of an annuity formula
@@ -55,8 +71,25 @@ namespace FinancialApp.Components.Pages
                 var pow = (decimal)Math.Pow((double)(1 + r), n);
                 fv = pv * pow + p * ((pow - 1m) / r);
             }
+            FutureValue = fv;
 
-            ResultText = $"Future value: {fv:C}";
+            AdditionalDepositsTotal = 0;
+            // include any one-time additional deposits specified in the form
+            if (AdditionalDeposits != null && AdditionalDeposits.Count > 0)
+            {
+                // recalculate including additional deposits (add their grown value to the computed fv)
+                decimal additionalTotal = 0m;
+                foreach (var ad in AdditionalDeposits)
+                {
+                    if (ad == null) continue;
+                    // only consider deposits that occur within the total period
+                    if (ad.Period <= 0 || ad.Period > n) continue;
+                    int monthsToGrow = n - ad.Period;
+                    var grow = (decimal)Math.Pow((double)(1 + r), monthsToGrow);
+                    additionalTotal += ad.Amount * grow;
+                }
+                AdditionalDepositsTotal = additionalTotal;
+            }
         }
 
         public void Dispose()
@@ -79,5 +112,11 @@ namespace FinancialApp.Components.Pages
         [Required]
         [Range(1, 1200, ErrorMessage = "Period must be at least 1 month")]
         public int Period { get; set; }
+    }
+
+    public class AdditionalDeposit
+    {
+        public decimal Amount { get; set; } = 0m;
+        public int Period { get; set; } = 0; // month at which this one-time deposit is made
     }
 }
