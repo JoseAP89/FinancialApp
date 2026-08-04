@@ -12,13 +12,24 @@ namespace FinancialApp.Data.Models
         [Required]
         [MaxLength(200)]
         public string Name { get; set; } = string.Empty;
+        // Description for the account (string stored as TEXT in SQLite)
+        [Required]
+        public string Description { get; set; } = string.Empty;
 
-        // Use decimal for currency; configure precision in DbContext if needed
-        public decimal Balance { get; set; }
+        // Which financial statement this account belongs to
+        [Required]
+        public FinancialStatement FinancialStatement { get; set; } = FinancialStatement.ASSET;
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         // Navigation
+        public int? ParentId { get; set; }
+
+        // Self-referencing navigation for hierarchical accounts
+        public Account? Parent { get; set; }
+
+        public ICollection<Account> Children { get; set; } = new List<Account>();
+
         public ICollection<Transaction> Transactions { get; set; } = new List<Transaction>();
     }
 }

@@ -14,7 +14,8 @@ namespace FinancialApp.Data
             var acct = new Account
             {
                 Name = "Checking",
-                Balance = 1000.00m
+                Description = "Primary checking account",
+                FinancialStatement = FinancialStatement.ASSET
             };
 
             context.Accounts.Add(acct);
