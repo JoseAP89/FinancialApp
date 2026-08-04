@@ -1,4 +1,9 @@
 ﻿using Microsoft.Extensions.Logging;
+using Microsoft.EntityFrameworkCore;
+using FinancialApp.Data;
+using Microsoft.Extensions.DependencyInjection;
+using System.IO;
+using Microsoft.Maui.Storage;
 
 namespace FinancialApp
 {
@@ -16,12 +21,28 @@ namespace FinancialApp
 
             builder.Services.AddMauiBlazorWebView();
 
+            // Configure EF Core DbContext to use a SQLite file in app data directory
+            var dbPath = Path.Combine(FileSystem.AppDataDirectory, "financialapp.db");
+            builder.Services.AddDbContext<FinancialDbContext>(options =>
+            {
+                options.UseSqlite($"Data Source={dbPath}");
+            });
+
+            // Register repository pattern implementations
+            builder.Services.AddScoped(typeof(Data.Repositories.IRepository<>), typeof(Data.Repositories.Repository<>));
+            builder.Services.AddScoped<Data.Repositories.IAccountRepository, Data.Repositories.AccountRepository>();
+
 #if DEBUG
-    		builder.Services.AddBlazorWebViewDeveloperTools();
-    		builder.Logging.AddDebug();
+            builder.Services.AddBlazorWebViewDeveloperTools();
+            builder.Logging.AddDebug();
 #endif
 
-            return builder.Build();
+            var app = builder.Build();
+
+            // Manual migrations only: do NOT call Database.Migrate() here.
+            // Run migrations locally using the EF tools and the DesignTimeDbContextFactory.
+
+            return app;
         }
     }
 }

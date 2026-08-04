@@ -45,6 +45,15 @@
 		<PackageReference Include="Xamarin.AndroidX.Startup.StartupRuntime" Version="1.2.0.5" />
 	</ItemGroup>
 
+	<ItemGroup>
+		<!-- Entity Framework Core for SQLite (local mobile DB) -->
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.0" />
+		<!-- Design package helps with tooling and migrations at design time -->
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.0">
+			<PrivateAssets>all</PrivateAssets>
+		</PackageReference>
+	</ItemGroup>
+
 	<PropertyGroup Condition=" '$(Configuration)' == 'Release' AND '$(TargetFramework)' == 'net10.0-android' ">
 		<!-- Signing -->
 		<AndroidKeyStore>true</AndroidKeyStore>
