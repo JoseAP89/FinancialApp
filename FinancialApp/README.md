@@ -59,35 +59,35 @@ This unification makes your database incredibly flexible and easier to manage.
 Here is the big picture of how everything connects. It's simpler than you think!
 ```
 +--------------------------------------------------+
-| CHART_OF_ACCOUNTS |
+| ACCOUNTS                                         |
 +--------------------------------------------------+
-| id (PK) |
-| name (e.g., "Checking", "Groceries", "Salary") |
+| id (PK)                                          |
+| name (e.g., "Checking", "Groceries", "Salary")   |
 | class (ASSET, LIABILITY, EQUITY, INCOME, EXPENSE)|
-| parent_id (FK -> CHART_OF_ACCOUNTS.id) |
+| parent_id (FK -> CHART_OF_ACCOUNTS.id)           |
 +------------------------+-------------------------+
-|
-| 1
-|
-| Many
+                         |
+                         | 1
+                         |
+                         | Many
 +------------------------+-------------------------+
-| TRANSACTION_LINES |
+| TRANSACTION_LINES                                |
 +--------------------------------------------------+
-| id (PK) |
-| transaction_id (FK -> TRANSACTIONS.id) |
-| account_id (FK -> CHART_OF_ACCOUNTS.id) |
-| amount (NUMERIC) |
+| id (PK)                                          |
+| transaction_id (FK -> TRANSACTIONS.id)           |
+| account_id (FK -> CHART_OF_ACCOUNTS.id)          |
+| amount (NUMERIC)                                 |
 +------------------------+-------------------------+
-|
-| Many
-|
-| 1
+                         |
+                         | Many
+                         |
+                         | 1
 +------------------------+-------------------------+
-| TRANSACTIONS |
+| TRANSACTIONS                                     |
 +--------------------------------------------------+
-| id (PK) |
-| date (DATE) |
-| description (TEXT) |
+| id (PK)                                          |
+| date (DATE)                                      |
+| description (TEXT)                               |
 +--------------------------------------------------+
 ```
 
