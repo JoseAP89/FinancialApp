@@ -25,26 +25,56 @@ namespace FinancialApp
 
             // Load configuration from appsettings.json and environment-specific file.
             var envName = Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT") ??
-                          Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ??
-                          "Production";
+                          Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
 
+#if DEBUG
+            // When debugging locally (including Android emulator) prefer Development if no env var set
+            if (string.IsNullOrWhiteSpace(envName))
+            {
+                envName = "Development";
+            }
+            System.Diagnostics.Debug.WriteLine("Environment detected: " + envName); 
+            System.Diagnostics.Debug.WriteLine("Raw config value: " + builder.Configuration["ConnectionStrings:DefaultConnection"]);
+#else
+            envName ??= "Production";
+#endif
+
+            // Helpful output when debugging launch/environment issues
+            System.Diagnostics.Debug.WriteLine($"Environment detected: {envName}");
+
+            // Try the normal file provider first (works on desktop).
             builder.Configuration
                    .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
                    .AddJsonFile($"appsettings.{envName}.json", optional: true, reloadOnChange: true);
 
+            // On some platforms the file provider may not find appsettings files
+            // when packaged. Instead of synchronously trying to open package files
+            // (which can throw on some platforms), prefer a safe fallback: if the
+            // configuration key is missing, use an application-local DB path.
+
+            // If a connection string is present in configuration, register the DbContext.
+            // Ensure a packaged DB is copied to the app data folder on first run.
+            // This will throw if the packaged DB is missing or cannot be copied,
+            // stopping startup (per user preference).
+            const string packagedDbFileName = "PersonalFinanceDB.db";
+            EnsureDatabaseCopiedAsync(packagedDbFileName).GetAwaiter().GetResult();
+
             // If a connection string is present in configuration, register the DbContext.
             var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-            if (!string.IsNullOrWhiteSpace(connectionString))
+
+            // If configuration did not provide a connection string (common on mobile),
+            // use the copied app data file so the app can run in Development.
+            if (string.IsNullOrWhiteSpace(connectionString))
             {
-                builder.Services.AddDbContext<FinancialDbContext>(options =>
-                {
-                    options.UseSqlite(connectionString);
-                });
+                var dbFile = Path.Combine(FileSystem.AppDataDirectory, packagedDbFileName);
+                connectionString = $"Data Source={dbFile}";
+                System.Diagnostics.Debug.WriteLine($"Using app-local DB: {dbFile}");
             }
-            else
+
+            builder.Services.AddDbContext<FinancialDbContext>(options =>
             {
-                // No connection string provided; DbContext must be configured externally.
-            }
+                options.UseSqlite(connectionString);
+            });
 
             // NOTE: DbContext registration can be provided via configuration (appsettings.json)
             // above. If no connection string is present the DbContext must be configured externally.
@@ -66,6 +96,35 @@ namespace FinancialApp
             // Run migrations locally using the EF tools and the DesignTimeDbContextFactory.
 
             return app;
+        }
+
+        static async System.Threading.Tasks.Task EnsureDatabaseCopiedAsync(string dbFileName)
+        {
+            var dbPath = Path.Combine(FileSystem.AppDataDirectory, dbFileName);
+            try
+            {
+                if (File.Exists(dbPath))
+                    return;
+
+                using var src = await FileSystem.OpenAppPackageFileAsync(dbFileName);
+                if (src == null)
+                    throw new FileNotFoundException($"Packaged database '{dbFileName}' not found in app package.");
+
+                // Ensure directory exists
+                var dir = Path.GetDirectoryName(dbPath);
+                if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
+                    Directory.CreateDirectory(dir!);
+
+                using var dest = File.Create(dbPath);
+                await src.CopyToAsync(dest);
+                System.Diagnostics.Debug.WriteLine($"Copied DB to {dbPath}");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Failed to copy DB to app data: {ex.Message}");
+                // Stop startup by rethrowing with context
+                throw new InvalidOperationException($"Unable to prepare embedded database '{dbFileName}'", ex);
+            }
         }
     }
 }
