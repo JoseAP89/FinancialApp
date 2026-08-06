@@ -19,11 +19,7 @@ namespace FinancialApp.Data
             };
 
             context.Accounts.Add(acct);
-            context.Transactions.Add(new Transaction
-            {
-                Account = acct,
-                Description = "Initial balance"
-            });
+            // No direct relationship between Account and Transaction, so do not create account-linked transactions here.
 
             context.SaveChanges();
         }

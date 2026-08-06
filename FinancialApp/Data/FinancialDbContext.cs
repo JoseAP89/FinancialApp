@@ -17,6 +17,7 @@ namespace FinancialApp.Data
         {
             base.OnModelCreating(modelBuilder);
 
+            // ACCOUNT ENTITY CONFIGURATION
             modelBuilder.Entity<Account>(entity =>
             {
                 entity.Property(a => a.Name).IsRequired().HasMaxLength(200);
@@ -26,7 +27,6 @@ namespace FinancialApp.Data
                 entity.Property(a => a.FinancialStatement)
                       .HasConversion<string>()
                       .HasColumnType("TEXT");
-                entity.HasMany(a => a.Transactions).WithOne(t => t.Account!).HasForeignKey(t => t.AccountId);
 
                 // Self-referencing one-to-many: an Account can have a Parent (nullable) and many Children
                 entity.HasOne(a => a.Parent)
@@ -35,11 +35,13 @@ namespace FinancialApp.Data
                       .OnDelete(DeleteBehavior.SetNull);
             });
 
+            // TRANSACTION ENTITY CONFIGURATION
             modelBuilder.Entity<Transaction>(entity =>
             {
                 entity.Property(t => t.Description).HasMaxLength(500);
             });
 
+            // TRANSACTION LINE ENTITY CONFIGURATION
             modelBuilder.Entity<TransactionLine>(entity =>
             {
                 entity.HasKey(tl => tl.Id);

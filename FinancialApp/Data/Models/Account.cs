@@ -30,8 +30,6 @@ namespace FinancialApp.Data.Models
 
         public ICollection<Account> Children { get; set; } = new List<Account>();
 
-        public ICollection<Transaction> Transactions { get; set; } = new List<Transaction>();
-
         // Transaction lines referencing this account
         public ICollection<TransactionLine> TransactionLines { get; set; } = new List<TransactionLine>();
     }

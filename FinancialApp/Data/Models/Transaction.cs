@@ -1,6 +1,7 @@
 using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Collections.Generic;
 
 namespace FinancialApp.Data.Models
 {
@@ -9,11 +10,7 @@ namespace FinancialApp.Data.Models
         [Key]
         public int Id { get; set; }
 
-        [Required]
-        public int AccountId { get; set; }
-
-        [ForeignKey(nameof(AccountId))]
-        public Account? Account { get; set; }
+        // Account reference removed: Transaction has no direct relationship to Account
 
         [MaxLength(500)]
         public string? Description { get; set; }

@@ -89,14 +89,14 @@ Here is the big picture of how everything connects. It's simpler than you think!
 
 Let's break down exactly what lives inside each table.
 
-### Chart of Accounts Table
-This is the master list. It contains *everything*—your assets, liabilities, income, expenses, and all the nested subcategories.
+### Accounts Table
+This is the master list. It contains *everything*—your assets, liabilities, revenues, expenses, and all the nested subcategories.
 
 | Column Name | Data Type | Description |
 | :--- | :--- | :--- |
 | `id (PK)` | `UUID / INT` | Unique identifier for the account. |
 | `name` | `VARCHAR` | A friendly name (e.g., "Chase Checking", "Food & Dining"). |
-| `class` | `ENUM` | The root type: `ASSET`, `LIABILITY`, `EQUITY`, `INCOME`, `EXPENSE`. |
+| `financial_statement` | `ENUM` | The root type: `ASSET`, `LIABILITY`, `EQUITY`, `REVENUE`, `EXPENSE`. |
 | `parent_id (FK)` | `UUID / INT` | References `id` in this table. `NULL` for top-level classes. Allows for an infinite nesting of subcategories. |
 
 ### Transactions Table
@@ -118,7 +118,7 @@ This is where the magic of double-entry accounting happens. Each transaction mus
 | :--- | :--- | :--- |
 | `id (PK)` | `UUID / INT` | Unique identifier for the line item. |
 | `transaction_id (FK)` | `UUID / INT` | Links back to the parent `TRANSACTIONS` header. |
-| `account_id (FK)` | `UUID / INT` | Links to the specific Account/Category in the `CHART_OF_ACCOUNTS`. |
+| `account_id (FK)` | `UUID / INT` | Links to the specific Account/Category in the `ACCOUNTS`. |
 | `amount` | `NUMERIC` | The signed financial amount (e.g., `150.00` or `-150.00`). |
 
 ## 4. Anticipating Your Reports (How Data Maps)
@@ -134,7 +134,7 @@ With this structure, generating financial statements is as easy as filtering by 
 
 ### Income Statement (Estado de Resultados)
 - **Performance:** Tracks your financial activity over a period (e.g., "January 1 to January 31").
-- **Filter:** `WHERE class IN ('INCOME', 'EXPENSE')`.
+- **Filter:** `WHERE class IN ('REVENUE', 'EXPENSE')`.
     - **Income:** Salary, Side hustle revenue, Dividends.
     - **Expenses:** Your nested categories (Groceries, Auto, Gas).
     - **Net Income:** Income minus Expenses. This is the exact amount you saved during that timeframe!
@@ -155,7 +155,7 @@ Here is how everyday money moves route through this schema to ensure your books 
 
 ### Receiving Paycheck ($3,000)
 - **Line 1:** `account_id` = Checking (`ASSET`), `amount` = `3000.00`
-- **Line 2:** `account_id` = Salary (`INCOME`), `amount` = `-3000.00`
+- **Line 2:** `account_id` = Salary (`REVENUE`), `amount` = `-3000.00`
 - **Result:** Assets increase by $3,000, Income increases by $3,000.
 
 ## The Foundational Five
