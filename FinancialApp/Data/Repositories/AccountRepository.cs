@@ -19,12 +19,18 @@ namespace FinancialApp.Data.Repositories
 
         public async Task<IEnumerable<Account>> GetAllParentAccountsAsync()
         {
-            return await _dbSet.Where(a => a.ParentId == null).ToListAsync();
+            return await _dbSet
+                .Where(a => a.ParentId == null)
+                .OrderBy(a => a.Name)
+                .ToListAsync();
         }
 
         public async Task<IEnumerable<Account>> GetAllChildAccountsByParentIdAsync(int parentId)
         {
-            return await _dbSet.Where(a => a.ParentId == parentId).ToListAsync();
+            return await _dbSet
+                .Where(a => a.ParentId == parentId)
+                .OrderBy(a => a.Name)
+                .ToListAsync();
         }
     }
 }
