@@ -25,9 +25,7 @@ How to run
 2. Set the appropriate startup project (the Blazor/MAUI host) and run (F5) or use the debugger.
 3. Navigate to the root page (`/`) to use the calculator.
 
-## The Core Architecture
-
-# 🏛️ The Modern Accounting Database Blueprint
+## 🏛️ The Core Architecture 
 
 Welcome to your financial data headquarters! 🚀 This guide walks you through a clean, theory-driven approach to structuring your financial database. By treating your bank accounts and spending categories as equals, we build a system that's both powerful and beautifully simple.
 
