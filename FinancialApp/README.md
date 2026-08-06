@@ -207,6 +207,8 @@ Depending on the accounting standard used, such as IFRS or US GAAP, standard set
 
 Notes
 -----
+- The database on Android depends on the Resourses/Raw/PersonalFinanceDB.db accuracy, thus, the local DB must be copied and pasted in that
+directory, so that the app can copy it from the project and paste it at the android device. To update it a deletion must be proformed on the outdated android database.
 - The app uses Blazor `EditForm` with an `EditContext` and data annotations for validation; this provides behavior similar to reactive forms.
 - The `Period` input is expressed in months.
 - If you want a different convention for deposit timing (beginning vs end of period) or additional features (export, charts, different compounding), open an issue or extend the `Home.razor.cs` logic.
