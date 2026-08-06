@@ -57,6 +57,8 @@ namespace FinancialApp
             // This will throw if the packaged DB is missing or cannot be copied,
             // stopping startup (per user preference).
             const string packagedDbFileName = "PersonalFinanceDB.db";
+
+            // Ensure the packaged DB is copied to the app data folder on first run.
             EnsureDatabaseCopiedAsync(packagedDbFileName).GetAwaiter().GetResult();
 
             // If a connection string is present in configuration, register the DbContext.
@@ -103,21 +105,22 @@ namespace FinancialApp
             var dbPath = Path.Combine(FileSystem.AppDataDirectory, dbFileName);
             try
             {
-                if (File.Exists(dbPath))
-                    return;
+                // If DB does not exist on device, copy the packaged DB as a baseline.
+                if (!File.Exists(dbPath))
+                {
+                    using var src = await FileSystem.OpenAppPackageFileAsync(dbFileName);
+                    if (src == null)
+                        throw new FileNotFoundException($"Packaged database '{dbFileName}' not found in app package.");
 
-                using var src = await FileSystem.OpenAppPackageFileAsync(dbFileName);
-                if (src == null)
-                    throw new FileNotFoundException($"Packaged database '{dbFileName}' not found in app package.");
+                    // Ensure directory exists
+                    var dir = Path.GetDirectoryName(dbPath);
+                    if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
+                        Directory.CreateDirectory(dir!);
 
-                // Ensure directory exists
-                var dir = Path.GetDirectoryName(dbPath);
-                if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
-                    Directory.CreateDirectory(dir!);
-
-                using var dest = File.Create(dbPath);
-                await src.CopyToAsync(dest);
-                System.Diagnostics.Debug.WriteLine($"Copied DB to {dbPath}");
+                    using var dest = File.Create(dbPath);
+                    await src.CopyToAsync(dest);
+                    System.Diagnostics.Debug.WriteLine($"Copied DB to {dbPath}");
+                }
             }
             catch (Exception ex)
             {

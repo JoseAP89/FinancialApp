@@ -52,6 +52,13 @@ INSERT INTO Accounts (Name, Description, FinancialStatement, ParentId) VALUES
 ('Cash & Bank',             'Cash, checking and bank accounts',        'ASSET', NULL),
 ('Liabilities',             'Credit cards, loans and other liabilities','LIABILITY', NULL),
 ('Equity',                  'Owner equity / net worth buckets',        'EQUITY', NULL),
+('Personal Care',           'Health, hygiene, and personal grooming',   'EXPENSE', NULL),
+('Health & Medicine',        'Healthcare, medications, and wellness',   'EXPENSE', NULL),
+('Alcohol & Tobacco',        'Alcoholic beverages and tobacco products', 'EXPENSE', NULL),
+('Tools & Equipment',        'Tools for home repairs and maintenance',   'EXPENSE', NULL),
+('Cleaning Supplies',        'Household cleaning products',               'EXPENSE', NULL),
+('Office & Stationery',      'Home office and writing supplies',         'EXPENSE', NULL),
+('Gifts & Donations',        'Gift purchases and charitable contributions', 'EXPENSE', NULL),
 ('Other Expenses',          'Miscellaneous expense buckets',           'EXPENSE', NULL);
 
 --------------------------------------------------------------------------------
@@ -171,3 +178,98 @@ INSERT INTO Accounts (Name, Description, FinancialStatement, ParentId) VALUES
 ('TV',                       'Television purchase',                    'EXPENSE', (SELECT Id FROM Accounts WHERE Name='Electronics & Appliances' LIMIT 1)),
 ('Computer',                 'Laptop / desktop purchase',              'EXPENSE', (SELECT Id FROM Accounts WHERE Name='Electronics & Appliances' LIMIT 1)),
 ('Other Electronics',        'Other electronic devices',               'EXPENSE', (SELECT Id FROM Accounts WHERE Name='Electronics & Appliances' LIMIT 1));
+
+--------------------------------------------------------------------------------
+-- Equity subaccounts (owner's equity / net worth buckets)
+--------------------------------------------------------------------------------
+INSERT INTO Accounts (Name, Description, FinancialStatement, ParentId) VALUES
+('Owner''s Capital',         'Initial and additional owner investments',     'EQUITY', (SELECT Id FROM Accounts WHERE Name='Equity' LIMIT 1)),
+('Retained Earnings',        'Accumulated profits not distributed',           'EQUITY', (SELECT Id FROM Accounts WHERE Name='Equity' LIMIT 1)),
+('Current Year Earnings',    'Net income for the current fiscal year',        'EQUITY', (SELECT Id FROM Accounts WHERE Name='Equity' LIMIT 1)),
+('Dividends/Drawings',       'Owner withdrawals or dividends paid',           'EQUITY', (SELECT Id FROM Accounts WHERE Name='Equity' LIMIT 1)),
+('Paid-in Capital',          'Additional paid-in capital beyond par value',   'EQUITY', (SELECT Id FROM Accounts WHERE Name='Equity' LIMIT 1)),
+('Treasury Stock',           'Company''s own shares repurchased',             'EQUITY', (SELECT Id FROM Accounts WHERE Name='Equity' LIMIT 1)),
+('Other Comprehensive Income', 'Unrealized gains/losses not in net income',   'EQUITY', (SELECT Id FROM Accounts WHERE Name='Equity' LIMIT 1));
+
+--------------------------------------------------------------------------------
+-- Personal Care & Hygiene (new top-level expense category)
+--------------------------------------------------------------------------------
+INSERT INTO Accounts (Name, Description, FinancialStatement, ParentId) VALUES
+('Shampoo & Conditioner',    'Hair care products',                          'EXPENSE', (SELECT Id FROM Accounts WHERE Name='Personal Care' LIMIT 1)),
+('Soap & Body Wash',         'Bathing and cleansing products',              'EXPENSE', (SELECT Id FROM Accounts WHERE Name='Personal Care' LIMIT 1)),
+('Deodorant',                'Antiperspirants and deodorants',              'EXPENSE', (SELECT Id FROM Accounts WHERE Name='Personal Care' LIMIT 1)),
+('Toothpaste & Oral Care',   'Dental hygiene products',                     'EXPENSE', (SELECT Id FROM Accounts WHERE Name='Personal Care' LIMIT 1)),
+('Shaving & Grooming',       'Razors, shaving cream, trimmers',             'EXPENSE', (SELECT Id FROM Accounts WHERE Name='Personal Care' LIMIT 1)),
+('Skincare',                 'Moisturizers, sunscreen, facial products',     'EXPENSE', (SELECT Id FROM Accounts WHERE Name='Personal Care' LIMIT 1)),
+('Makeup & Cosmetics',       'Cosmetic products',                           'EXPENSE', (SELECT Id FROM Accounts WHERE Name='Personal Care' LIMIT 1)),
+('Haircuts & Salon',         'Professional haircuts and salon services',    'EXPENSE', (SELECT Id FROM Accounts WHERE Name='Personal Care' LIMIT 1));
+
+--------------------------------------------------------------------------------
+-- Health & Medicine (new top-level expense category)
+--------------------------------------------------------------------------------
+INSERT INTO Accounts (Name, Description, FinancialStatement, ParentId) VALUES
+('Prescriptions',            'Prescription medications',                    'EXPENSE', (SELECT Id FROM Accounts WHERE Name='Health & Medicine' LIMIT 1)),
+('Over-the-Counter Drugs',   'OTC medicines (pain relievers, cold meds)',   'EXPENSE', (SELECT Id FROM Accounts WHERE Name='Health & Medicine' LIMIT 1)),
+('Vitamins & Supplements',   'Dietary supplements and vitamins',            'EXPENSE', (SELECT Id FROM Accounts WHERE Name='Health & Medicine' LIMIT 1)),
+('Doctor Visits',            'Medical consultations and checkups',          'EXPENSE', (SELECT Id FROM Accounts WHERE Name='Health & Medicine' LIMIT 1)),
+('Dental Care',              'Dentist visits, cleanings, procedures',       'EXPENSE', (SELECT Id FROM Accounts WHERE Name='Health & Medicine' LIMIT 1)),
+('Vision Care',              'Eye exams, glasses, contact lenses',          'EXPENSE', (SELECT Id FROM Accounts WHERE Name='Health & Medicine' LIMIT 1)),
+('Health Insurance',         'Health insurance premiums',                   'EXPENSE', (SELECT Id FROM Accounts WHERE Name='Health & Medicine' LIMIT 1)),
+('Therapy & Mental Health',  'Counseling, therapy sessions',                'EXPENSE', (SELECT Id FROM Accounts WHERE Name='Health & Medicine' LIMIT 1)),
+('First Aid Supplies',       'Bandages, antiseptics, first aid kits',       'EXPENSE', (SELECT Id FROM Accounts WHERE Name='Health & Medicine' LIMIT 1));
+
+--------------------------------------------------------------------------------
+-- Alcohol & Tobacco (new top-level expense category)
+--------------------------------------------------------------------------------
+INSERT INTO Accounts (Name, Description, FinancialStatement, ParentId) VALUES
+('Beer',                     'Beer purchases',                              'EXPENSE', (SELECT Id FROM Accounts WHERE Name='Alcohol & Tobacco' LIMIT 1)),
+('Wine',                     'Wine purchases',                              'EXPENSE', (SELECT Id FROM Accounts WHERE Name='Alcohol & Tobacco' LIMIT 1)),
+('Spirits & Liquor',         'Hard liquor and spirits',                     'EXPENSE', (SELECT Id FROM Accounts WHERE Name='Alcohol & Tobacco' LIMIT 1)),
+('Cigarettes',               'Cigarette purchases',                         'EXPENSE', (SELECT Id FROM Accounts WHERE Name='Alcohol & Tobacco' LIMIT 1)),
+('Vaping Products',          'E-cigarettes, vape juice, accessories',       'EXPENSE', (SELECT Id FROM Accounts WHERE Name='Alcohol & Tobacco' LIMIT 1)),
+('Cigars',                   'Cigar purchases',                             'EXPENSE', (SELECT Id FROM Accounts WHERE Name='Alcohol & Tobacco' LIMIT 1));
+
+--------------------------------------------------------------------------------
+-- Home Maintenance & Tools (expanding under Housing or as new top-level)
+--------------------------------------------------------------------------------
+INSERT INTO Accounts (Name, Description, FinancialStatement, ParentId) VALUES
+('Hand Tools',               'Wrenches, screwdrivers, hammers',              'EXPENSE', (SELECT Id FROM Accounts WHERE Name='Tools & Equipment' LIMIT 1)),
+('Power Tools',              'Drills, saws, sanders',                        'EXPENSE', (SELECT Id FROM Accounts WHERE Name='Tools & Equipment' LIMIT 1)),
+('Mechanic Tools',           'Car repair tools, jacks, stands',              'EXPENSE', (SELECT Id FROM Accounts WHERE Name='Tools & Equipment' LIMIT 1)),
+('Gardening Tools',          'Shovels, rakes, trimmers',                     'EXPENSE', (SELECT Id FROM Accounts WHERE Name='Tools & Equipment' LIMIT 1)),
+('Tool Storage',             'Toolboxes, pegboards, organizers',             'EXPENSE', (SELECT Id FROM Accounts WHERE Name='Tools & Equipment' LIMIT 1)),
+('Safety Equipment',         'Gloves, goggles, masks, safety gear',          'EXPENSE', (SELECT Id FROM Accounts WHERE Name='Tools & Equipment' LIMIT 1));
+
+--------------------------------------------------------------------------------
+-- Cleaning Supplies (new top-level expense category)
+--------------------------------------------------------------------------------
+INSERT INTO Accounts (Name, Description, FinancialStatement, ParentId) VALUES
+('All-Purpose Cleaner',      'Multi-surface cleaning solutions',            'EXPENSE', (SELECT Id FROM Accounts WHERE Name='Cleaning Supplies' LIMIT 1)),
+('Laundry Detergent',        'Laundry soap, fabric softener, stain removers', 'EXPENSE', (SELECT Id FROM Accounts WHERE Name='Cleaning Supplies' LIMIT 1)),
+('Dish Soap',                'Dishwashing liquid and dishwasher detergent',  'EXPENSE', (SELECT Id FROM Accounts WHERE Name='Cleaning Supplies' LIMIT 1)),
+('Bathroom Cleaners',        'Toilet, tub, and tile cleaners',              'EXPENSE', (SELECT Id FROM Accounts WHERE Name='Cleaning Supplies' LIMIT 1)),
+('Floor Cleaners',           'Mop solutions, floor wax',                    'EXPENSE', (SELECT Id FROM Accounts WHERE Name='Cleaning Supplies' LIMIT 1)),
+('Paper Products',           'Paper towels, tissues, toilet paper',         'EXPENSE', (SELECT Id FROM Accounts WHERE Name='Cleaning Supplies' LIMIT 1)),
+('Trash Bags',               'Garbage bags and liners',                     'EXPENSE', (SELECT Id FROM Accounts WHERE Name='Cleaning Supplies' LIMIT 1));
+
+--------------------------------------------------------------------------------
+-- Office & Stationery (new top-level expense category)
+--------------------------------------------------------------------------------
+INSERT INTO Accounts (Name, Description, FinancialStatement, ParentId) VALUES
+('Paper & Envelopes',        'Printer paper, envelopes, notepads',          'EXPENSE', (SELECT Id FROM Accounts WHERE Name='Office & Stationery' LIMIT 1)),
+('Pens & Pencils',           'Writing instruments and refills',             'EXPENSE', (SELECT Id FROM Accounts WHERE Name='Office & Stationery' LIMIT 1)),
+('Printer Ink & Toner',      'Printer cartridges',                          'EXPENSE', (SELECT Id FROM Accounts WHERE Name='Office & Stationery' LIMIT 1)),
+('Office Furniture',         'Desks, chairs, filing cabinets',              'EXPENSE', (SELECT Id FROM Accounts WHERE Name='Office & Stationery' LIMIT 1)),
+('Postage & Shipping',       'Stamps, shipping supplies',                   'EXPENSE', (SELECT Id FROM Accounts WHERE Name='Office & Stationery' LIMIT 1)),
+('Calendars & Planners',     'Organizational tools',                        'EXPENSE', (SELECT Id FROM Accounts WHERE Name='Office & Stationery' LIMIT 1));
+
+--------------------------------------------------------------------------------
+-- Gifts & Donations (new top-level expense category)
+--------------------------------------------------------------------------------
+INSERT INTO Accounts (Name, Description, FinancialStatement, ParentId) VALUES
+('Birthday Gifts',           'Birthday presents for others',                'EXPENSE', (SELECT Id FROM Accounts WHERE Name='Gifts & Donations' LIMIT 1)),
+('Holiday Gifts',            'Christmas, holiday gift giving',              'EXPENSE', (SELECT Id FROM Accounts WHERE Name='Gifts & Donations' LIMIT 1)),
+('Charitable Donations',     'Donations to charities and causes',           'EXPENSE', (SELECT Id FROM Accounts WHERE Name='Gifts & Donations' LIMIT 1)),
+('Wedding Gifts',            'Wedding presents',                            'EXPENSE', (SELECT Id FROM Accounts WHERE Name='Gifts & Donations' LIMIT 1)),
+('Baby Gifts',               'Baby shower and new baby gifts',              'EXPENSE', (SELECT Id FROM Accounts WHERE Name='Gifts & Donations' LIMIT 1)),
+('Gift Wrapping',            'Wrapping paper, bags, ribbons',               'EXPENSE', (SELECT Id FROM Accounts WHERE Name='Gifts & Donations' LIMIT 1));
