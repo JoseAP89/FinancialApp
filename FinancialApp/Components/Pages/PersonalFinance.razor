@@ -26,6 +26,19 @@
                     }
                 }
             </select>
+            <div class="mt-3">
+                <label for="subAccountSelect">Select a sub-account</label>
+                <select id="subAccountSelect" @bind="SelectedChildId" class="form-select">
+                    <option value="">-- Select --</option>
+                    @if (ChildAccounts is not null)
+                    {
+                        foreach (var acct in ChildAccounts)
+                        {
+                            <option value="@acct.Id">@acct.Name</option>
+                        }
+                    }
+                </select>
+            </div>
         }
     </div>
 </div>

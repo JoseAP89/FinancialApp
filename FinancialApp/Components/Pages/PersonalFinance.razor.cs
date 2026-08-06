@@ -19,7 +19,23 @@ namespace FinancialApp.Components.Pages
 
         protected List<Account> ParentAccounts { get; set; } = new List<Account>();
 
-        protected int? SelectedParentId { get; set; }
+        protected List<Account> ChildAccounts { get; set; } = new List<Account>();
+
+        private int? _selectedParentId;
+        protected int? SelectedParentId
+        {
+            get => _selectedParentId;
+            set
+            {
+                if (_selectedParentId != value)
+                {
+                    _selectedParentId = value;
+                    _ = LoadChildAccountsForSelectedParentAsync(_selectedParentId);
+                }
+            }
+        }
+
+        protected int? SelectedChildId { get; set; }
 
         protected bool IsLoading { get; set; }
 
@@ -43,6 +59,31 @@ namespace FinancialApp.Components.Pages
             {
                 IsLoading = false;
             }
+        }
+
+        private async Task LoadChildAccountsForSelectedParentAsync(int? parentId)
+        {
+            SelectedChildId = null;
+            if (parentId == null)
+            {
+                ChildAccounts = new List<Account>();
+                await InvokeAsync(StateHasChanged);
+                return;
+            }
+
+            try
+            {
+                var children = await AccountRepository.GetAllChildAccountsByParentIdAsync(parentId.Value);
+                ChildAccounts = children?.ToList() ?? new List<Account>();
+            }
+            catch (Exception ex)
+            {
+                Logger?.LogError(ex, "Failed to load child accounts for parent id {ParentId}.", parentId);
+                ErrorMessage = "Unable to load sub-accounts.";
+                ChildAccounts = new List<Account>();
+            }
+
+            await InvokeAsync(StateHasChanged);
         }
     }
 }
