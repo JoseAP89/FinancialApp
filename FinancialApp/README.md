@@ -58,7 +58,7 @@ Here is the big picture of how everything connects. It's simpler than you think!
 | id (PK)                                                        |
 | name (e.g., "Checking", "Groceries", "Salary")                 |
 | financial_statement(ASSET, LIABILITY, EQUITY, REVENUE, EXPENSE)|
-| parent_id (FK -> CHART_OF_ACCOUNTS.id)                         |
+| parent_id (FK -> ACCOUNTS.id)                                  |
 +------------------------+---------------------------------------+
                          |
                          | 1
