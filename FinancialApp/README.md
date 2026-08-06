@@ -52,14 +52,14 @@ This unification makes your database incredibly flexible and easier to manage.
 
 Here is the big picture of how everything connects. It's simpler than you think!
 ```
-+--------------------------------------------------+
-| ACCOUNTS                                         |
-+--------------------------------------------------+
-| id (PK)                                          |
-| name (e.g., "Checking", "Groceries", "Salary")   |
-| class (ASSET, LIABILITY, EQUITY, INCOME, EXPENSE)|
-| parent_id (FK -> CHART_OF_ACCOUNTS.id)           |
-+------------------------+-------------------------+
++----------------------------------------------------------------+
+| ACCOUNTS                                                       |
++----------------------------------------------------------------+
+| id (PK)                                                        |
+| name (e.g., "Checking", "Groceries", "Salary")                 |
+| financial_statement(ASSET, LIABILITY, EQUITY, REVENUE, EXPENSE)|
+| parent_id (FK -> CHART_OF_ACCOUNTS.id)                         |
++------------------------+---------------------------------------+
                          |
                          | 1
                          |
@@ -69,8 +69,9 @@ Here is the big picture of how everything connects. It's simpler than you think!
 +--------------------------------------------------+
 | id (PK)                                          |
 | transaction_id (FK -> TRANSACTIONS.id)           |
-| account_id (FK -> CHART_OF_ACCOUNTS.id)          |
+| account_id (FK -> ACCOUNTS.id)                   |
 | amount (NUMERIC)                                 |
+| description (TEXT)                               |
 +------------------------+-------------------------+
                          |
                          | Many
@@ -120,6 +121,7 @@ This is where the magic of double-entry accounting happens. Each transaction mus
 | `transaction_id (FK)` | `UUID / INT` | Links back to the parent `TRANSACTIONS` header. |
 | `account_id (FK)` | `UUID / INT` | Links to the specific Account/Category in the `ACCOUNTS`. |
 | `amount` | `NUMERIC` | The signed financial amount (e.g., `150.00` or `-150.00`). |
+| `description` | `TEXT` | A memo or note (e.g., "1kg of pork meat"). |
 
 ## 4. Anticipating Your Reports (How Data Maps)
 
@@ -127,7 +129,7 @@ With this structure, generating financial statements is as easy as filtering by 
 
 ### Balance Sheet (Balance General)
 - **Snapshot:** A picture of your financial health "As of Today."
-- **Filter:** `WHERE class IN ('ASSET', 'LIABILITY', 'EQUITY')`.
+- **Filter:** `WHERE financial_statement IN ('ASSET', 'LIABILITY', 'EQUITY')`.
     - **Assets:** Checking, Savings, Investments, Property.
     - **Liabilities:** Credit Card Balances, Student Loans, Mortgages.
     - **Equity:** Your calculated Net Worth (Assets - Liabilities).
@@ -135,7 +137,7 @@ With this structure, generating financial statements is as easy as filtering by 
 ### Income Statement (Estado de Resultados)
 - **Performance:** Tracks your financial activity over a period (e.g., "January 1 to January 31").
 - **Filter:** `WHERE class IN ('REVENUE', 'EXPENSE')`.
-    - **Income:** Salary, Side hustle revenue, Dividends.
+    - **Revenue:** Salary, Side hustle revenue, Dividends.
     - **Expenses:** Your nested categories (Groceries, Auto, Gas).
     - **Net Income:** Income minus Expenses. This is the exact amount you saved during that timeframe!
 
