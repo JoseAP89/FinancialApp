@@ -52,6 +52,7 @@ namespace FinancialApp
             // Register repository pattern implementations
             builder.Services.AddScoped(typeof(Data.Repositories.IRepository<>), typeof(Data.Repositories.Repository<>));
             builder.Services.AddScoped<Data.Repositories.IAccountRepository, Data.Repositories.AccountRepository>();
+            builder.Services.AddScoped<Data.Repositories.ITransactionRepository, Data.Repositories.TransactionRepository>();
 
 #if DEBUG
             builder.Services.AddBlazorWebViewDeveloperTools();
