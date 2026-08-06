@@ -1,3 +1,5 @@
 <Solution>
-  <Project Path="FinancialApp.csproj" />
+  <Project Path="FinancialApp.csproj">
+    <Deploy Solution="Debug|*" />
+  </Project>
 </Solution>
