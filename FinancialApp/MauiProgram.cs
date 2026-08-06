@@ -1,8 +1,10 @@
 ﻿using Microsoft.Extensions.Logging;
-using Microsoft.EntityFrameworkCore;
 using FinancialApp.Data;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Configuration;
 using System.IO;
+using System;
 using Microsoft.Maui.Storage;
 
 namespace FinancialApp
@@ -21,12 +23,31 @@ namespace FinancialApp
 
             builder.Services.AddMauiBlazorWebView();
 
-            // Configure EF Core DbContext to use a SQLite file in app data directory
-            var dbPath = Path.Combine(FileSystem.AppDataDirectory, "financialapp.db");
-            builder.Services.AddDbContext<FinancialDbContext>(options =>
+            // Load configuration from appsettings.json and environment-specific file.
+            var envName = Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT") ??
+                          Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ??
+                          "Production";
+
+            builder.Configuration
+                   .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
+                   .AddJsonFile($"appsettings.{envName}.json", optional: true, reloadOnChange: true);
+
+            // If a connection string is present in configuration, register the DbContext.
+            var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+            if (!string.IsNullOrWhiteSpace(connectionString))
             {
-                options.UseSqlite($"Data Source={dbPath}");
-            });
+                builder.Services.AddDbContext<FinancialDbContext>(options =>
+                {
+                    options.UseSqlite(connectionString);
+                });
+            }
+            else
+            {
+                // No connection string provided; DbContext must be configured externally.
+            }
+
+            // NOTE: DbContext registration can be provided via configuration (appsettings.json)
+            // above. If no connection string is present the DbContext must be configured externally.
 
             // Register repository pattern implementations
             builder.Services.AddScoped(typeof(Data.Repositories.IRepository<>), typeof(Data.Repositories.Repository<>));
