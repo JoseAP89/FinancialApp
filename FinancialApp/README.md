@@ -175,15 +175,20 @@ Here is how everyday money moves route through this schema to ensure your books 
 
 All of this is built on the core framework of financial accounting. These five categories are the universal building blocks.
 
-```mermaid
-graph TD
-    A[Elements of Financial State] --> B[Balance Sheet]
-    A --> C[Income Statement]
-    B --> D[Asset]
-    B --> E[Liability]
-    B --> F[Equity]
-    C --> G[Revenue]
-    C --> H[Expense]
+┌───────────────────────────────┐
+│ Elements of Financial State. │
+└───────────────┬───────────────┘
+│
+┌────────────────────────┴────────────────────────┐
+│ │
+▼ ▼
+┌─────────────────┐ ┌─────────────────┐
+│ Balance Sheet │ │Income Statement │
+└────────┬────────┘ └────────┬────────┘
+│ │
+├─► Asset ├─► Revenue
+├─► Liability └─► Expense
+└─► Equity
 
 
 ### Balance Sheet Elements (Financial Position)
