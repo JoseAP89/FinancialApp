@@ -53,6 +53,7 @@ namespace FinancialApp
             builder.Services.AddScoped(typeof(Data.Repositories.IRepository<>), typeof(Data.Repositories.Repository<>));
             builder.Services.AddScoped<Data.Repositories.IAccountRepository, Data.Repositories.AccountRepository>();
             builder.Services.AddScoped<Data.Repositories.ITransactionRepository, Data.Repositories.TransactionRepository>();
+            builder.Services.AddScoped<Data.Repositories.ITransactionLineRepository, Data.Repositories.TransactionLineRepository>();
 
 #if DEBUG
             builder.Services.AddBlazorWebViewDeveloperTools();
