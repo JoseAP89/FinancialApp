@@ -174,6 +174,7 @@ Here is how everyday money moves route through this schema to ensure your books 
 ## The Foundational Five
 
 All of this is built on the core framework of financial accounting. These five categories are the universal building blocks.
+
 ```mermaid
 graph TD
     A[Elements of Financial State] --> B[Balance Sheet]
