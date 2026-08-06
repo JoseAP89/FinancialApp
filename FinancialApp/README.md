@@ -6,13 +6,14 @@ $$
 FV = PV \times (1 + r)^n + P \times \frac{(1 + r)^n - 1}{r}
 $$
 
-It also has the capability to store your daily finances so that you can track them and take better financial decisions.
 
 Where:
 - `PV` is the initial amount (present value)
 - `P` is the periodic deposit
 - `r` is the interest rate per period (monthly rate = annualRate / 12)
 - `n` is the number of periods (months)
+
+It also has the capability to store your daily finances so that you can track them and take better financial decisions.
 
 Project structure (key files)
 -----------------------------
