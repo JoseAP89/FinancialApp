@@ -174,20 +174,15 @@ Here is how everyday money moves route through this schema to ensure your books 
 ## The Foundational Five
 
 All of this is built on the core framework of financial accounting. These five categories are the universal building blocks.
-                  ┌───────────────────────────────┐
-                  │ Elements of Financial State.  │
-                  └───────────────┬───────────────┘
-                                  │
-         ┌────────────────────────┴────────────────────────┐
-         │                                                 │
-         ▼                                                 ▼
-┌─────────────────┐                               ┌─────────────────┐
-│  Balance Sheet  │                               │Income Statement │
-└────────┬────────┘                               └────────┬────────┘
-         │                                                 │
-         ├─► Asset                                         ├─► Revenue
-         ├─► Liability                                     └─► Expense
-         └─► Equity
+```mermaid
+graph TD
+    A[Elements of Financial State] --> B[Balance Sheet]
+    A --> C[Income Statement]
+    B --> D[Asset]
+    B --> E[Liability]
+    B --> F[Equity]
+    C --> G[Revenue]
+    C --> H[Expense]
 
 
 ### Balance Sheet Elements (Financial Position)
