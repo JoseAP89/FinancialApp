@@ -29,8 +29,6 @@ How to run
 
 Welcome to your financial data headquarters! 🚀 This guide walks you through a clean, theory-driven approach to structuring your financial database. By treating your bank accounts and spending categories as equals, we build a system that's both powerful and beautifully simple.
 
----
-
 ## Table of Contents
 - [The Core Architectural Shift](#1-core-architectural-shift)
 - [Complete Financial ERD](#2-complete-financial-erd)
@@ -38,8 +36,6 @@ Welcome to your financial data headquarters! 🚀 This guide walks you through a
 - [Anticipating Your Reports](#4-anticipating-your-reports-how-data-maps)
 - [Practical Ledger Examples](#5-practical-ledger-examples)
 - [The Foundational Five](#the-foundational-five)
-
----
 
 ## 1. Core Architectural Shift
 
@@ -89,9 +85,6 @@ Here is the big picture of how everything connects. It's simpler than you think!
 +--------------------------------------------------+
 ```
 
-
----
-
 ## 3. Comprehensive Table Structures
 
 Let's break down exactly what lives inside each table.
@@ -128,8 +121,6 @@ This is where the magic of double-entry accounting happens. Each transaction mus
 | `account_id (FK)` | `UUID / INT` | Links to the specific Account/Category in the `CHART_OF_ACCOUNTS`. |
 | `amount` | `NUMERIC` | The signed financial amount (e.g., `150.00` or `-150.00`). |
 
----
-
 ## 4. Anticipating Your Reports (How Data Maps)
 
 With this structure, generating financial statements is as easy as filtering by the `class` column. Your data is ready for analysis!
@@ -147,8 +138,6 @@ With this structure, generating financial statements is as easy as filtering by 
     - **Income:** Salary, Side hustle revenue, Dividends.
     - **Expenses:** Your nested categories (Groceries, Auto, Gas).
     - **Net Income:** Income minus Expenses. This is the exact amount you saved during that timeframe!
-
----
 
 ## 5. Practical Ledger Examples
 
@@ -168,8 +157,6 @@ Here is how everyday money moves route through this schema to ensure your books 
 - **Line 1:** `account_id` = Checking (`ASSET`), `amount` = `3000.00`
 - **Line 2:** `account_id` = Salary (`INCOME`), `amount` = `-3000.00`
 - **Result:** Assets increase by $3,000, Income increases by $3,000.
-
----
 
 ## The Foundational Five
 
