@@ -175,20 +175,22 @@ Here is how everyday money moves route through this schema to ensure your books 
 
 All of this is built on the core framework of financial accounting. These five categories are the universal building blocks.
 
-┌───────────────────────────────┐
-│ Elements of Financial State. │
-└───────────────┬───────────────┘
-│
-┌────────────────────────┴────────────────────────┐
-│ │
-▼ ▼
-┌─────────────────┐ ┌─────────────────┐
-│ Balance Sheet │ │Income Statement │
-└────────┬────────┘ └────────┬────────┘
-│ │
-├─► Asset ├─► Revenue
-├─► Liability └─► Expense
-└─► Equity
+```
+                  ┌───────────────────────────────┐
+                  │ Elements of Financial State.  │
+                  └───────────────┬───────────────┘
+                                  │
+         ┌────────────────────────┴────────────────────────┐
+         │                                                 │
+         ▼                                                 ▼
+┌─────────────────┐                               ┌─────────────────┐
+│  Balance Sheet  │                               │Income Statement │
+└────────┬────────┘                               └────────┬────────┘
+         │                                                 │
+         ├─► Asset                                         ├─► Revenue
+         ├─► Liability                                     └─► Expense
+         └─► Equity
+```
 
 
 ### Balance Sheet Elements (Financial Position)
