@@ -1,10 +1,12 @@
 ## FinancialApp
 
-FinancialApp is a small demo web app (Blazor/.NET MAUI based workspace) that demonstrates a simple financial calculator for computing the future value of an annuity. It lets a user enter an initial amount (present value), a periodic deposit, an annual interest rate and a period (in months), and shows the computed future value using the formula:
+FinancialApp is an android app (Blazor/.NET MAUI based workspace) that demonstrates a simple financial calculator for computing the future value of an annuity. It lets a user enter an initial amount (present value), a periodic deposit, an annual interest rate and a period (in months), and shows the computed future value using the formula:
 
 $$
 FV = PV \times (1 + r)^n + P \times \frac{(1 + r)^n - 1}{r}
 $$
+
+It also has the capability to store your daily finances so that you can track them and take better financial decisions.
 
 Where:
 - `PV` is the initial amount (present value)
