@@ -19,10 +19,8 @@ CREATE TABLE IF NOT EXISTS Accounts (
 
 CREATE TABLE IF NOT EXISTS Transactions (
     Id INTEGER PRIMARY KEY AUTOINCREMENT,
-    AccountId INTEGER NOT NULL,
     Description TEXT,
-    Date TEXT NOT NULL DEFAULT (CURRENT_TIMESTAMP),
-    FOREIGN KEY (AccountId) REFERENCES Accounts(Id) ON DELETE CASCADE
+    Date TEXT NOT NULL DEFAULT (CURRENT_TIMESTAMP)
 );
 
 CREATE TABLE IF NOT EXISTS TransactionLines (
@@ -36,7 +34,6 @@ CREATE TABLE IF NOT EXISTS TransactionLines (
 );
 
 CREATE INDEX IF NOT EXISTS IX_Accounts_ParentId ON Accounts(ParentId);
-CREATE INDEX IF NOT EXISTS IX_Transactions_AccountId ON Transactions(AccountId);
 CREATE INDEX IF NOT EXISTS IX_TransactionLines_TransactionId ON TransactionLines(TransactionId);
 CREATE INDEX IF NOT EXISTS IX_TransactionLines_AccountId ON TransactionLines(AccountId);
 
