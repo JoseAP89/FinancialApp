@@ -1,8 +1,5 @@
-FinancialApp
-============
+## FinancialApp
 
-Purpose
--------
 FinancialApp is a small demo web app (Blazor/.NET MAUI based workspace) that demonstrates a simple financial calculator for computing the future value of an annuity. It lets a user enter an initial amount (present value), a periodic deposit, an annual interest rate and a period (in months), and shows the computed future value using the formula:
 
 FV = PV * ((1 + r) ** n) + P * (((1 + r) ** n - 1) / r)
@@ -27,7 +24,7 @@ How to run
 
 ## 🏛️ The Core Architecture 
 
-Welcome to your financial data headquarters! 🚀 This guide walks you through a clean, theory-driven approach to structuring your financial database. By treating your bank accounts and spending categories as equals, we build a system that's both powerful and beautifully simple.
+This guide walks you through a clean, theory-driven approach to explaining your financial database structure. By treating your bank accounts and spending categories as equals, we build a system that's both powerful and simple.
 
 ## Table of Contents
 - [The Core Architectural Shift](#1-core-architectural-shift)
@@ -39,14 +36,12 @@ Welcome to your financial data headquarters! 🚀 This guide walks you through a
 
 ## 1. Core Architectural Shift
 
-Forget the old way of having separate tables for **Accounts** and **Categories**. In our world, everything lives together in one master directory: **The Chart of Accounts (COA)**.
+Forget the old way of having separate tables for **Accounts** and **Categories**. In our world, everything lives together in one master directory: **Accounts**.
 
 - Your **Bank Accounts** (Checking, Credit Card) and your **Spending Categories** (Groceries, Gas, Salary) are structurally identical.
 - They are simply distinguished by their high-level **Accounting Type** (e.g., `ASSET`, `EXPENSE`).
 
 This unification makes your database incredibly flexible and easier to manage.
-
----
 
 ## 2. Complete Financial ERD
 
