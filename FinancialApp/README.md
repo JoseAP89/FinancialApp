@@ -57,6 +57,7 @@ This unification makes your database incredibly flexible and easier to manage.
 ## 2. Complete Financial ERD
 
 Here is the big picture of how everything connects. It's simpler than you think!
+```
 +--------------------------------------------------+
 | CHART_OF_ACCOUNTS |
 +--------------------------------------------------+
@@ -88,6 +89,7 @@ Here is the big picture of how everything connects. It's simpler than you think!
 | date (DATE) |
 | description (TEXT) |
 +--------------------------------------------------+
+```
 
 
 ---
