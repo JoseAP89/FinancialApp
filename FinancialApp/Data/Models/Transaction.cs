@@ -15,11 +15,12 @@ namespace FinancialApp.Data.Models
         [ForeignKey(nameof(AccountId))]
         public Account? Account { get; set; }
 
-        public decimal Amount { get; set; }
-
         [MaxLength(500)]
         public string? Description { get; set; }
 
         public DateTime Date { get; set; } = DateTime.UtcNow;
+
+        // Transaction lines for split transactions
+        public ICollection<TransactionLine> TransactionLines { get; set; } = new List<TransactionLine>();
     }
 }

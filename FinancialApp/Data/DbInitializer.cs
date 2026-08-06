@@ -22,7 +22,6 @@ namespace FinancialApp.Data
             context.Transactions.Add(new Transaction
             {
                 Account = acct,
-                Amount = 1000.00m,
                 Description = "Initial balance"
             });
 
