@@ -16,6 +16,7 @@
 
         @if (TransactionLines?.Any() == true)
         {
+            var lineIndex = 1;
             foreach (var line in TransactionLines)
             {
                 <div class="card mb-3">
@@ -24,6 +25,7 @@
                             <button class="btn btn-sm btn-danger" @onclick="() => RemoveTransactionLine(line)">Remove</button>
                         </div>
 
+                        <p class="line-number">Line @lineIndex</p>
                         <div class="field-with-popover mb-2">
                             <div class="label-with-icon d-flex align-items-center mb-1">
                                 <label for="parentSelect" class="mb-0">Select an account</label>
@@ -93,6 +95,7 @@
                         <input class="form-control" type="number" step="0.01" min="0.01" value="@line.Amount" @oninput="@(e => OnLineAmountChanged(e, line))" />
                     </div>
                 </div>
+                lineIndex++;
             }
         }
 

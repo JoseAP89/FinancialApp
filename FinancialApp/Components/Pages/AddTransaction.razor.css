@@ -46,3 +46,10 @@
         min-width: 200px;
     }
 }
+
+.line-number {
+    display: inline-block;
+    text-align: left;
+    margin-bottom: 0.5em;
+    color: rgba(0, 0, 0, 0.6);
+}
