@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Components;
+// using System.Timers; (use fully-qualified name to avoid ambiguity with System.Threading.Timer)
 using Microsoft.Extensions.Logging;
 using FinancialApp.Data.Models;
 using FinancialApp.Data.Repositories;
@@ -57,6 +58,13 @@ namespace FinancialApp.Components.Pages
             else
             {
                 line.SelectedChildId = null;
+                // hide any child popover and stop its timer when selection cleared
+                if (line.ChildPopoverTimer is not null)
+                {
+                    try { line.ChildPopoverTimer.Stop(); line.ChildPopoverTimer.Dispose(); } catch { }
+                    line.ChildPopoverTimer = null;
+                }
+                line.IsChildPopoverVisible = false;
             }
 
             // Clear validation display when the user edits inputs
@@ -72,6 +80,11 @@ namespace FinancialApp.Components.Pages
             public int? SelectedChildId { get; set; }
             public string? Description { get; set; }
             public decimal Amount { get; set; }
+            // Popover UI state and timers
+            public bool IsParentPopoverVisible { get; set; }
+            public System.Timers.Timer? ParentPopoverTimer { get; set; }
+            public bool IsChildPopoverVisible { get; set; }
+            public System.Timers.Timer? ChildPopoverTimer { get; set; }
         }
 
         protected List<TransactionLineDto> TransactionLines { get; set; } = new List<TransactionLineDto>();
@@ -142,6 +155,17 @@ namespace FinancialApp.Components.Pages
 
         protected void RemoveTransactionLine(TransactionLineDto line)
         {
+            // dispose any timers associated with the line to avoid leaks
+            if (line.ParentPopoverTimer is not null)
+            {
+                try { line.ParentPopoverTimer.Stop(); line.ParentPopoverTimer.Dispose(); } catch { }
+                line.ParentPopoverTimer = null;
+            }
+            if (line.ChildPopoverTimer is not null)
+            {
+                try { line.ChildPopoverTimer.Stop(); line.ChildPopoverTimer.Dispose(); } catch { }
+                line.ChildPopoverTimer = null;
+            }
             TransactionLines.Remove(line);
             ClearValidation();
         }
@@ -154,6 +178,13 @@ namespace FinancialApp.Components.Pages
                 // When the parent account changes, clear the previously selected sub-account
                 // so the user must explicitly choose a new sub-account for this line.
                 line.SelectedChildId = null;
+                // Also hide any child popover and stop its timer
+                if (line.ChildPopoverTimer is not null)
+                {
+                    try { line.ChildPopoverTimer.Stop(); line.ChildPopoverTimer.Dispose(); } catch { }
+                    line.ChildPopoverTimer = null;
+                }
+                line.IsChildPopoverVisible = false;
                 await LoadChildAccountsForLineAsync(line, parentId);
             }
             else
@@ -161,11 +192,118 @@ namespace FinancialApp.Components.Pages
                 line.SelectedParentId = null;
                 line.ChildAccounts = new List<Account>();
                 line.SelectedChildId = null;
+                // hide both popovers and stop timers
+                if (line.ParentPopoverTimer is not null)
+                {
+                    try { line.ParentPopoverTimer.Stop(); line.ParentPopoverTimer.Dispose(); } catch { }
+                    line.ParentPopoverTimer = null;
+                }
+                line.IsParentPopoverVisible = false;
+
+                if (line.ChildPopoverTimer is not null)
+                {
+                    try { line.ChildPopoverTimer.Stop(); line.ChildPopoverTimer.Dispose(); } catch { }
+                    line.ChildPopoverTimer = null;
+                }
+                line.IsChildPopoverVisible = false;
             }
 
             // Clear validation display when the user edits inputs
             ClearValidation();
             await InvokeAsync(StateHasChanged);
+        }
+
+        // Toggle parent popover visibility. Clicking again will close. Auto-closes after 12s.
+        protected void ToggleParentPopover(TransactionLineDto line)
+        {
+            if (line.IsParentPopoverVisible)
+            {
+                // close
+                line.IsParentPopoverVisible = false;
+                if (line.ParentPopoverTimer is not null)
+                {
+                    try { line.ParentPopoverTimer.Stop(); line.ParentPopoverTimer.Dispose(); } catch { }
+                    line.ParentPopoverTimer = null;
+                }
+            }
+            else
+            {
+                // open
+                line.IsParentPopoverVisible = true;
+                // ensure previous timer disposed
+                if (line.ParentPopoverTimer is not null)
+                {
+                    try { line.ParentPopoverTimer.Stop(); line.ParentPopoverTimer.Dispose(); } catch { }
+                    line.ParentPopoverTimer = null;
+                }
+                var t = new System.Timers.Timer(12000) { AutoReset = false };
+                t.Elapsed += async (s, e) =>
+                {
+                    try
+                    {
+                        t.Stop();
+                        t.Dispose();
+                    }
+                    catch { }
+                    line.ParentPopoverTimer = null;
+                    line.IsParentPopoverVisible = false;
+                    await InvokeAsync(StateHasChanged);
+                };
+                line.ParentPopoverTimer = t;
+                t.Start();
+            }
+        }
+
+        // Toggle child popover visibility. Clicking again will close. Auto-closes after 12s.
+        protected void ToggleChildPopover(TransactionLineDto line)
+        {
+            if (line.IsChildPopoverVisible)
+            {
+                line.IsChildPopoverVisible = false;
+                if (line.ChildPopoverTimer is not null)
+                {
+                    try { line.ChildPopoverTimer.Stop(); line.ChildPopoverTimer.Dispose(); } catch { }
+                    line.ChildPopoverTimer = null;
+                }
+            }
+            else
+            {
+                line.IsChildPopoverVisible = true;
+                if (line.ChildPopoverTimer is not null)
+                {
+                    try { line.ChildPopoverTimer.Stop(); line.ChildPopoverTimer.Dispose(); } catch { }
+                    line.ChildPopoverTimer = null;
+                }
+                var t = new System.Timers.Timer(12000) { AutoReset = false };
+                t.Elapsed += async (s, e) =>
+                {
+                    try
+                    {
+                        t.Stop();
+                        t.Dispose();
+                    }
+                    catch { }
+                    line.ChildPopoverTimer = null;
+                    line.IsChildPopoverVisible = false;
+                    await InvokeAsync(StateHasChanged);
+                };
+                line.ChildPopoverTimer = t;
+                t.Start();
+            }
+        }
+
+        private string GetParentDescription(TransactionLineDto line)
+        {
+            if (!line.SelectedParentId.HasValue) return string.Empty;
+            var acct = ParentAccounts?.FirstOrDefault(a => a.Id == line.SelectedParentId.Value);
+            return acct?.Description ?? string.Empty;
+        }
+
+        private string GetChildDescription(TransactionLineDto line)
+        {
+            if (!line.SelectedChildId.HasValue) return string.Empty;
+            var acct = line.ChildAccounts?.FirstOrDefault(a => a.Id == line.SelectedChildId.Value);
+            return acct?.Description ?? string.Empty;
         }
 
         private async Task LoadChildAccountsForLineAsync(TransactionLineDto line, int parentId)

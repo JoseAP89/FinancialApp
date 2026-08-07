@@ -24,29 +24,67 @@
                             <button class="btn btn-sm btn-danger" @onclick="() => RemoveTransactionLine(line)">Remove</button>
                         </div>
 
-                        <label for="parentSelect">Select an account</label>
-                        <select class="form-select mb-2" @onchange="@(e => OnParentChangedForLine(e, line))" value="@(line.SelectedParentId?.ToString() ?? String.Empty)">
-                            <option value="">-- Select --</option>
-                            @if (ParentAccounts is not null)
-                            {
-                                foreach (var acct in ParentAccounts)
+                        <div class="field-with-popover mb-2">
+                            <div class="label-with-icon d-flex align-items-center mb-1">
+                                <label for="parentSelect" class="mb-0">Select an account</label>
+                                @if (line.SelectedParentId.HasValue)
                                 {
-                                    <option value="@acct.Id">@acct.Name</option>
+                                    <div class="info-container ms-2">
+                                        <button class="info-icon" @onclick="() => ToggleParentPopover(line)">i</button>
+                                        @if (line.IsParentPopoverVisible)
+                                        {
+                                            <div class="popover-overlay">
+                                                <div class="card p-2">
+                                                    <div class="small">@GetParentDescription(line)</div>
+                                                </div>
+                                            </div>
+                                        }
+                                    </div>
                                 }
-                            }
-                        </select>
+                            </div>
 
-                        <label for="childSelect">Select a sub-account</label>
-                        <select class="form-select mb-2" value="@(line.SelectedChildId?.ToString() ?? String.Empty)" @onchange="@(e => OnChildChangedForLine(e, line))">
-                            <option value="">-- Select --</option>
-                            @if (line.ChildAccounts is not null)
-                            {
-                                foreach (var acct in line.ChildAccounts)
+                            <select class="form-select" @onchange="@(e => OnParentChangedForLine(e, line))" value="@(line.SelectedParentId?.ToString() ?? String.Empty)">
+                                <option value="">-- Select --</option>
+                                @if (ParentAccounts is not null)
                                 {
-                                    <option value="@acct.Id">@acct.Name</option>
+                                    foreach (var acct in ParentAccounts)
+                                    {
+                                        <option value="@acct.Id">@acct.Name</option>
+                                    }
                                 }
-                            }
-                        </select>
+                            </select>
+                        </div>
+
+                        <div class="field-with-popover mb-2">
+                            <div class="label-with-icon d-flex align-items-center mb-1">
+                                <label for="childSelect" class="mb-0">Select a sub-account</label>
+                                @if (line.SelectedChildId.HasValue)
+                                {
+                                    <div class="info-container ms-2">
+                                        <button class="info-icon" @onclick="() => ToggleChildPopover(line)">i</button>
+                                        @if (line.IsChildPopoverVisible)
+                                        {
+                                            <div class="popover-overlay">
+                                                <div class="card p-2">
+                                                    <div class="small">@GetChildDescription(line)</div>
+                                                </div>
+                                            </div>
+                                        }
+                                    </div>
+                                }
+                            </div>
+
+                            <select class="form-select" value="@(line.SelectedChildId?.ToString() ?? String.Empty)" @onchange="@(e => OnChildChangedForLine(e, line))">
+                                <option value="">-- Select --</option>
+                                @if (line.ChildAccounts is not null)
+                                {
+                                    foreach (var acct in line.ChildAccounts)
+                                    {
+                                        <option value="@acct.Id">@acct.Name</option>
+                                    }
+                                }
+                            </select>
+                        </div>
 
                         <label>Description</label>
                         <textarea class="form-control mb-2" maxlength="200" rows="2" value="@line.Description" @oninput="@(e => OnLineDescriptionChanged(e, line))"></textarea>
