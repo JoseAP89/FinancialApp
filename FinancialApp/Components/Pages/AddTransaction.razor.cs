@@ -151,6 +151,9 @@ namespace FinancialApp.Components.Pages
             if (int.TryParse(Convert.ToString(e.Value), out var parentId))
             {
                 line.SelectedParentId = parentId;
+                // When the parent account changes, clear the previously selected sub-account
+                // so the user must explicitly choose a new sub-account for this line.
+                line.SelectedChildId = null;
                 await LoadChildAccountsForLineAsync(line, parentId);
             }
             else
