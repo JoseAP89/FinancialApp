@@ -7,7 +7,7 @@
     <div class="card-body">
         <div class="mb-3">
             <label for="transactionDescription">Transaction description</label>
-            <textarea id="transactionDescription" class="form-control" rows="4" @bind="TransactionDescription" maxlength="200"></textarea>
+            <textarea id="transactionDescription" class="form-control" rows="4" value="@TransactionDescription" @oninput="@(e => OnTransactionDescriptionChanged(e))" maxlength="200"></textarea>
         </div>
 
         <div class="mb-2">
@@ -37,7 +37,7 @@
                         </select>
 
                         <label for="childSelect">Select a sub-account</label>
-                        <select class="form-select mb-2" @bind="line.SelectedChildId">
+                        <select class="form-select mb-2" value="@(line.SelectedChildId?.ToString() ?? String.Empty)" @onchange="@(e => OnChildChangedForLine(e, line))">
                             <option value="">-- Select --</option>
                             @if (line.ChildAccounts is not null)
                             {
@@ -49,10 +49,10 @@
                         </select>
 
                         <label>Description</label>
-                        <textarea class="form-control mb-2" maxlength="200" rows="2" @bind="line.Description"></textarea>
+                        <textarea class="form-control mb-2" maxlength="200" rows="2" value="@line.Description" @oninput="@(e => OnLineDescriptionChanged(e, line))"></textarea>
 
                         <label>Amount</label>
-                        <input class="form-control" type="number" step="0.01" min="0.01" @bind="line.Amount" />
+                        <input class="form-control" type="number" step="0.01" min="0.01" value="@line.Amount" @oninput="@(e => OnLineAmountChanged(e, line))" />
                     </div>
                 </div>
             }
@@ -61,6 +61,18 @@
         <div class="mt-3">
             <button class="btn btn-primary" @onclick="CreateTransaction">Submit</button>
         </div>
+
+        @if (ShowValidation && !CanSubmit)
+        {
+            <div class="mt-2 text-danger">
+                <ul>
+                    @foreach (var err in GetValidationErrors())
+                    {
+                        <li>@err</li>
+                    }
+                </ul>
+            </div>
+        }
 
     </div>
 </div>
