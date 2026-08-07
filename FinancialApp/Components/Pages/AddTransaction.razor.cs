@@ -18,11 +18,16 @@ namespace FinancialApp.Components.Pages
         [Inject]
         protected ILogger<AddTransaction> Logger { get; set; } = null!;
 
+        [Inject]
+        protected ITransactionRepository TransactionRepository { get; set; } = null!;
+
+        [Inject]
+        protected Microsoft.JSInterop.IJSRuntime JSRuntime { get; set; } = null!;
+
         protected List<Account> ParentAccounts { get; set; } = new List<Account>();
 
         protected List<Account> ChildAccounts { get; set; } = new List<Account>();
 
-        protected int? SelectedChildId { get; set; }
         private string TransactionDescription { get; set; } = string.Empty;
 
         protected bool IsLoading { get; set; }
@@ -434,8 +439,39 @@ namespace FinancialApp.Components.Pages
             var tx = BuildTransactionFromInputs();
             await BalanceTransaction(tx);
             Logger?.LogDebug("CreateTransaction debug: {@Transaction}", tx);
-            // After successful creation, clear validation display
+
+            try
+            {
+                IsLoading = true;
+
+                // Persist transaction (EF will cascade insert TransactionLines attached to the Transaction)
+                await TransactionRepository.AddAsync(tx);
+                await TransactionRepository.SaveChangesAsync();
+
+                // Show success toast (JS alert fallback)
+                try { await JSRuntime.InvokeAsync<object>("alert", new object?[] { "Transaction added successfully" }); } catch { }
+                ClearTransactionPageState();
+
+            }
+            catch (Exception ex)
+            {
+                Logger?.LogError(ex, "CreateTransaction failed while saving transaction.");
+                try { await JSRuntime.InvokeAsync<object>("alert", new object?[] { "There was an error with your request, try again." }); } catch { }
+            }
+            finally
+            {
+                IsLoading = false;
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+
+        protected void ClearTransactionPageState()
+        {
+            // Reset UI state
             ClearValidation();
+            TransactionLines.Clear();
+            TransactionDescription = string.Empty;
+            CurrentTransaction = new Transaction();
         }
 
         protected void OnTransactionDescriptionChanged(ChangeEventArgs e)
