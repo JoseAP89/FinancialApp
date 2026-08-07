@@ -1,0 +1,27 @@
+.receipt {
+    max-width: 420px;
+    width: 100%;
+    background: #fcf9f2;
+    padding: 1rem;
+    border-radius: 12px;
+    box-shadow: 0 6px 16px rgba(0,0,0,0.08);
+    margin-bottom: 1rem;
+}
+
+.receipt-header { text-align: left; border-bottom: 1px dashed #e0dcd0; padding-bottom: 0.4rem; margin-bottom: 0.6rem; }
+.receipt-header .brand { font-weight: 700; color: #1e3c5c; display:flex; align-items:center; gap:8px; }
+.receipt-header .sub { font-size:0.85rem; color:#5b4f3a }
+
+.expense-list { list-style:none; margin:0; padding:0 }
+.expense-item { display:flex; justify-content:space-between; padding:0.35rem 0; border-bottom:1px dotted #e6e0d3; }
+.expense-item .item-name { display:flex; align-items:center; gap:8px; flex:1 }
+.expense-item .item-price { font-weight:600; background:#f2ede2; padding:0 6px; border-radius:4px }
+.item-qty { font-size:0.75rem; background:#e7dfd0; padding:0 6px; border-radius:10px; margin-left:6px }
+
+.totals { margin-top:0.6rem }
+.total-line { display:flex; justify-content:space-between }
+.total-line.grand-total { font-weight:700; color:#1e3c5c; margin-top:0.3rem }
+
+.financial-history-page { padding: 1rem }
+
+@media (max-width:600px) { .receipt { max-width:100% } }
