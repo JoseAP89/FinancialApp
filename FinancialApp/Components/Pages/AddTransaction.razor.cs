@@ -34,7 +34,7 @@ namespace FinancialApp.Components.Pages
             IsLoading = true;
             try
             {
-                var parents = await AccountRepository.GetAllParentAccountsAsync();
+                var parents = await AccountRepository.GetVisibleParentAccountsAsync();
                 ParentAccounts = parents?.ToList() ?? new List<Account>();
             }
             catch (Exception ex)
@@ -310,7 +310,7 @@ namespace FinancialApp.Components.Pages
         {
             try
             {
-                var children = await AccountRepository.GetAllChildAccountsByParentIdAsync(parentId);
+                var children = await AccountRepository.GetVisibleChildAccountsByParentIdAsync(parentId);
                 line.ChildAccounts = children?.ToList() ?? new List<Account>();
             }
             catch (Exception ex)
@@ -345,7 +345,82 @@ namespace FinancialApp.Components.Pages
             return tx;
         }
 
-        protected void CreateTransaction()
+        // Auto-balance a transaction similar to the provided python implementation:
+        // - Calculate current balance using account FinancialStatement:
+        //   ASSET and EXPENSE contribute as debits (+), LIABILITY/EQUITY/REVENUE as credits (-)
+        // - If the absolute balance > 0.01, find a cash/bank ASSET account and append a
+        //   compensating TransactionLine with Amount = -balance and Description = "Auto-balance entry".
+        protected async Task BalanceTransaction(Transaction transaction)
+        {
+            if (transaction == null) return;
+
+            // Calculate current balance
+            decimal balance = 0m;
+
+            foreach (var line in transaction.TransactionLines)
+            {
+                try
+                {
+                    var acct = await AccountRepository.GetByIdAsync(line.AccountId);
+                    if (acct is null)
+                    {
+                        Logger?.LogWarning("BalanceTransaction: account id {AccountId} not found; skipping line in balance calc.", line.AccountId);
+                        continue;
+                    }
+
+                    if (acct.FinancialStatement == FinancialStatement.ASSET || acct.FinancialStatement == FinancialStatement.EXPENSE)
+                    {
+                        // Debit
+                        balance += line.Amount;
+                    }
+                    else
+                    {
+                        // Credit
+                        balance -= line.Amount;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Logger?.LogError(ex, "BalanceTransaction: failed while reading account for line account id {AccountId}", line.AccountId);
+                }
+            }
+
+            // If not balanced beyond threshold, add compensating line
+            if (Math.Abs(balance) > 0.01m)
+            {
+                try
+                {
+                    // Try to find a suitable cash/bank asset account by listing accounts and searching names
+                    var allAccounts = (await AccountRepository.ListAsync())?.ToList() ?? new List<Account>();
+                    var checkAccount = allAccounts
+                        .FirstOrDefault(a => 
+                            a.FinancialStatement == FinancialStatement.ASSET
+                            && (a.Name?.IndexOf("Checking Account", StringComparison.OrdinalIgnoreCase) >= 0)
+                        );
+                    if (checkAccount is null)
+                    {
+                        Logger?.LogWarning("BalanceTransaction: no cash/bank ASSET account found to auto-balance transaction (balance={Balance}).", balance);
+                        return;
+                    }
+
+                    var compensating = new TransactionLine
+                    {
+                        AccountId = checkAccount.Id,
+                        Amount = decimal.Round(-balance, 2, MidpointRounding.ToEven),
+                        Description = "Auto-balance entry"
+                    };
+
+                    transaction.TransactionLines.Add(compensating);
+                    Logger?.LogInformation("BalanceTransaction: added auto-balance line to account id {AccountId} amount {Amount}.", compensating.AccountId, compensating.Amount);
+                }
+                catch (Exception ex)
+                {
+                    Logger?.LogError(ex, "BalanceTransaction: failed to add compensating line for balance {Balance}", balance);
+                }
+            }
+        }
+
+        protected async Task CreateTransaction()
         {
             // Show validation errors after the user clicked submit
             ShowValidation = true;
@@ -357,6 +432,7 @@ namespace FinancialApp.Components.Pages
             }
 
             var tx = BuildTransactionFromInputs();
+            await BalanceTransaction(tx);
             Logger?.LogDebug("CreateTransaction debug: {@Transaction}", tx);
             // After successful creation, clear validation display
             ClearValidation();

@@ -32,5 +32,25 @@ namespace FinancialApp.Data.Repositories
                 .OrderBy(a => a.Name)
                 .ToListAsync();
         }
+
+        public async Task<IEnumerable<Account>> GetVisibleParentAccountsAsync()
+        {
+            return await _dbSet
+                .Where(a => a.ParentId == null
+                            && !a.IsSystem 
+                            && a.FinancialStatement != FinancialStatement.EQUITY)
+                .OrderBy(a => a.Name)
+                .ToListAsync();
+        }
+
+        public async Task<IEnumerable<Account>> GetVisibleChildAccountsByParentIdAsync(int parentId)
+        {
+            return await _dbSet
+                .Where(a => a.ParentId == parentId
+                            && !a.IsSystem
+                            && a.FinancialStatement != FinancialStatement.EQUITY)
+                .OrderBy(a => a.Name)
+                .ToListAsync();
+        }
     }
 }

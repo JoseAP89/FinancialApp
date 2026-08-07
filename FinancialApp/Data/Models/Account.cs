@@ -25,6 +25,9 @@ namespace FinancialApp.Data.Models
         // Navigation
         public int? ParentId { get; set; }
 
+        // Indicates this is a system/internal account and should not be shown to users
+        public bool IsSystem { get; set; } = false;
+
         // Self-referencing navigation for hierarchical accounts
         public Account? Parent { get; set; }
 
