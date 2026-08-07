@@ -1,128 +1,155 @@
-<#
-UpdateDB.ps1
-
-PowerShell helper to push or merge a SQLite database to an Android emulator/device using adb.
-
-Requirements:
-- adb on PATH (Android platform-tools)
-- App must be debuggable (run-as works)
-- For the "update" action: sqlite3 CLI on the dev machine
-
-Usage examples:
-  # Replace device DB with a local DB file
-  .\UpdateDB.ps1 -Action replace -LocalDbPath "C:\path\to\replacement.db" -Package "com.companyname.financialapp"
-
-  # Merge Accounts table from a packaged DB into the installed DB
-  .\UpdateDB.ps1 -Action update -LocalDbPath "C:\path\to\packaged.db" -Package "com.companyname.financialapp"
-#>
 param(
-	[string]$Package = "com.companyname.financialapp",
-	[ValidateSet("replace","update")] [string]$Action = "update",
-	[string]$LocalDbPath = "",
-	[string]$DbName = "PersonalFinanceDB.db",
-	[string]$AdbPath = "adb",
-	[string]$SqlitePath = "sqlite3"
+	[Parameter(Mandatory=$true)]
+	[ValidateSet('replace','update')]
+	[string]$Action,
+
+	[Parameter(Mandatory=$true)]
+	[string]$LocalDbPath,
+
+	[Parameter(Mandatory=$true)]
+	[string]$AndroidDbPath
 )
 
-function Run-AdbRedirect {
-	param([string[]]$Args, [string]$OutFile)
-	$psi = New-Object System.Diagnostics.ProcessStartInfo
-	$psi.FileName = $AdbPath
-	$psi.Arguments = $Args -join ' '
-	$psi.RedirectStandardOutput = $true
-	$psi.UseShellExecute = $false
-	$psi.CreateNoWindow = $true
+function Exec-Adb {
+	param(
+		[string[]]$Args,
+		[string]$RedirectStdOutPath
+	)
 
-	$p = [System.Diagnostics.Process]::Start($psi)
-	$fs = [System.IO.File]::Open($OutFile, [System.IO.FileMode]::Create, [System.IO.FileAccess]::Write)
-	try {
-		$buffer = New-Object byte[] 8192
-		while (($read = $p.StandardOutput.BaseStream.Read($buffer, 0, $buffer.Length)) -gt 0) {
-			$fs.Write($buffer, 0, $read)
+	# Use PowerShell native invocation to capture output and reliable exit code
+	$adb = 'adb'
+	if ($RedirectStdOutPath) {
+		try {
+			# Run adb and redirect both stdout and stderr to the file for diagnostics
+			& $adb @Args 2>&1 | Out-File -FilePath $RedirectStdOutPath -Encoding UTF8
+			$exit = $LASTEXITCODE
 		}
-	} finally {
-		$fs.Close()
-		$p.WaitForExit()
-	}
-	if ($p.ExitCode -ne 0) { throw "adb process failed with exit code $($p.ExitCode)" }
-}
-
-function Run-Adb {
-	param([string[]]$Args)
-	$rc = & $AdbPath @Args
-	if ($LASTEXITCODE -ne 0) { throw "adb failed: $($Args -join ' ')" }
-	return $rc
-}
-
-# Verify adb exists
-if (-not (Get-Command $AdbPath -ErrorAction SilentlyContinue)) {
-	Write-Error "adb not found (ensure Android platform-tools are installed and adb is on PATH)."
-	exit 2
-}
-
-if ($Action -eq 'replace' -and -not (Test-Path $LocalDbPath)) {
-	Write-Error "Local DB file required for replace action: supply -LocalDbPath path/to/db"
-	exit 2
-}
-if ($Action -eq 'update' -and -not (Test-Path $LocalDbPath)) {
-	Write-Error "Packaged DB file required for update action: supply -LocalDbPath path/to/packaged.db"
-	exit 2
-}
-
-$timestamp = (Get-Date).ToString('yyyyMMddHHmmss')
-$tempDir = [System.IO.Path]::Combine([System.IO.Path]::GetTempPath(), "dbsync_$timestamp")
-New-Item -ItemType Directory -Path $tempDir | Out-Null
-
-try {
-	$remoteRel = "files/$DbName"
-	$localPulled = [System.IO.Path]::Combine($tempDir, "installed_$DbName")
-	Write-Host "Pulling installed DB from device..."
-
-	# adb exec-out run-as <pkg> cat files/<db>
-	Run-AdbRedirect @('exec-out','run-as',$Package,'cat',$remoteRel) $localPulled
-	Write-Host "Pulled to $localPulled"
-
-	if ($Action -eq 'replace') {
-		Write-Host "Replacing DB on device with local file $LocalDbPath..."
-		$tmpName = "push_$($timestamp)_$([System.IO.Path]::GetFileName($LocalDbPath))"
-		$remoteTmp = "/data/local/tmp/$tmpName"
-		Run-Adb @('push',$LocalDbPath,$remoteTmp)
-		# move into app files using run-as
-		Run-Adb @('shell','run-as',$Package,'cp',$remoteTmp,$remoteRel)
-		Run-Adb @('shell','run-as',$Package,'chmod','600',$remoteRel)
-		Run-Adb @('shell','rm',$remoteTmp)
-		Write-Host "Replace complete."
-		exit 0
-	}
-
-	if ($Action -eq 'update') {
-		Write-Host "Merging Accounts from packaged DB ($LocalDbPath) into pulled DB..."
-		if (-not (Get-Command $SqlitePath -ErrorAction SilentlyContinue)) {
-			Write-Error "sqlite3 CLI not found. Install sqlite3 or add it to PATH."
-			exit 2
+		catch {
+			$_ | Out-File -FilePath $RedirectStdOutPath -Append -Encoding UTF8
+			$exit = 1
 		}
-
-		# Compose SQL and run attach/insert locally
-		$sql = "ATTACH '$LocalDbPath' AS src; INSERT OR IGNORE INTO Accounts (Id, Name, Balance) SELECT Id, Name, Balance FROM src.Accounts; DETACH src;"
-		& $SqlitePath $localPulled $sql
-		if ($LASTEXITCODE -ne 0) { throw "sqlite3 command failed." }
-
-		# Push modified DB back
-		$tmpName = "push_$($timestamp)_$DbName"
-		$remoteTmp = "/data/local/tmp/$tmpName"
-		Run-Adb @('push',$localPulled,$remoteTmp)
-		Run-Adb @('shell','run-as',$Package,'cp',$remoteTmp,$remoteRel)
-		Run-Adb @('shell','run-as',$Package,'chmod','600',$remoteRel)
-		Run-Adb @('shell','rm',$remoteTmp)
-		Write-Host "Update complete."
-		exit 0
+		return [PSCustomObject]@{ ExitCode = $exit; StdOutPath = $RedirectStdOutPath }
 	}
+	else {
+		$output = & $adb @Args 2>&1
+		$exit = $LASTEXITCODE
+		return [PSCustomObject]@{ ExitCode = $exit; Output = $output }
+	}
+}
 
-} catch {
-	Write-Error $_.Exception.Message
+function Ensure-FileExists {
+	param([string]$Path)
+	if (-not (Test-Path $Path)) {
+		Write-Error "File not found: $Path"
+		exit 2
+	}
+}
+
+if (-not (Get-Command adb -ErrorAction SilentlyContinue)) {
+	Write-Error "adb not found in PATH. Install Android Platform Tools and ensure 'adb' is available."
 	exit 3
-} finally {
-	Remove-Item -Recurse -Force $tempDir -ErrorAction SilentlyContinue
 }
 
-Write-Host "Done."
+Ensure-FileExists -Path $LocalDbPath
+
+$package = $AndroidDbPath
+
+Write-Host "Action: $Action"
+Write-Host "Local DB: $LocalDbPath"
+Write-Host "Android package: $package"
+
+# Discover databases in the installed app
+$lsArgs = @('shell', "run-as $package ls /data/data/$package/databases")
+$tmpOut = [System.IO.Path]::GetTempFileName()
+$res = Exec-Adb -Args $lsArgs -RedirectStdOutPath $tmpOut
+if ($res.ExitCode -ne 0) {
+	$dbg = Get-Content $tmpOut -ErrorAction SilentlyContinue
+	Write-Error "Failed to list databases for package $package. Ensure the device/emulator is connected and the app is debuggable (so run-as works).`nADB output:`n$($dbg -join "`n")"
+	Remove-Item $tmpOut -ErrorAction SilentlyContinue
+	exit 4
+}
+
+$dbList = Get-Content $tmpOut | Where-Object { $_ -and ($_ -ne '.') -and ($_ -ne '..') } | ForEach-Object { $_.Trim() }
+Remove-Item $tmpOut -ErrorAction SilentlyContinue
+
+if (-not $dbList -or $dbList.Count -eq 0) {
+	Write-Error "No databases found in /data/data/$package/databases."
+	exit 5
+}
+
+function Choose-TargetDb {
+	param([string[]]$DbList, [string]$SourcePath)
+	if ($DbList.Count -eq 1) { return $DbList[0] }
+	$sourceBase = [System.IO.Path]::GetFileName($SourcePath)
+	foreach ($d in $DbList) { if ($d -eq $sourceBase) { return $d } }
+	Write-Host "Multiple databases found: $($DbList -join ', ')"
+	Write-Host "No exact match for source basename '$sourceBase'. Will pick the first database: $($DbList[0])"
+	return $DbList[0]
+}
+
+$targetDb = Choose-TargetDb -DbList $dbList -SourcePath $LocalDbPath
+
+if ($Action -eq 'replace') {
+	# Replace entire DB file. Use basename for target file name.
+	$basename = [System.IO.Path]::GetFileName($LocalDbPath)
+
+	Write-Host "Pushing $LocalDbPath to device temporary location..."
+	$res = Exec-Adb -Args @('push', $LocalDbPath, "/data/local/tmp/$basename")
+	if ($res.ExitCode -ne 0) { Write-Error "adb push failed. Output: $($res.Output -join "`n")"; exit 6 }
+
+	Write-Host "Copying into app databases via run-as (will overwrite)..."
+	$shellCmd = "run-as $package cp /data/local/tmp/$basename /data/data/$package/databases/$basename && rm /data/local/tmp/$basename"
+	$res = Exec-Adb -Args @('shell', $shellCmd)
+	if ($res.ExitCode -ne 0) { Write-Error "Failed to copy replacement DB into app databases. Output: $($res.Output -join "`n")"; exit 7 }
+
+	Write-Host "Replace completed: /data/data/$package/databases/$basename"
+	exit 0
+}
+
+if ($Action -eq 'update') {
+	# Merge Accounts table from LocalDbPath into the installed DB (targetDb)
+	# Requires sqlite3 CLI available locally
+	if (-not (Get-Command sqlite3 -ErrorAction SilentlyContinue)) {
+		Write-Error "sqlite3 CLI not found in PATH. Install sqlite3 (https://www.sqlite.org/download.html) or ensure it's on PATH."
+		exit 8
+	}
+
+	$tempDir = Join-Path -Path ([System.IO.Path]::GetTempPath()) -ChildPath ([System.IO.Path]::GetRandomFileName())
+	New-Item -ItemType Directory -Path $tempDir | Out-Null
+	$localTarget = Join-Path $tempDir $targetDb
+	$localSource = Join-Path $tempDir ([System.IO.Path]::GetFileName($LocalDbPath))
+
+	try {
+		Write-Host "Pulling target DB from device..."
+		$args = @('exec-out', "run-as $package cat /data/data/$package/databases/$targetDb")
+		$res = Exec-Adb -Args $args -RedirectStdOutPath $localTarget
+		if ($res.ExitCode -ne 0) {
+			$dbg = Get-Content $localTarget -ErrorAction SilentlyContinue
+			Write-Error "Failed to pull target DB. adb output:`n$($dbg -join "`n")"; exit 9 }
+
+		Write-Host "Copying local source DB to temp workspace..."
+		Copy-Item -Path $LocalDbPath -Destination $localSource -Force
+
+		Write-Host "Merging Accounts table from source into target (local)..."
+		$sql = "ATTACH '$localSource' AS src; BEGIN TRANSACTION; PRAGMA foreign_keys=OFF; DELETE FROM Accounts; INSERT INTO Accounts SELECT * FROM src.Accounts; COMMIT; DETACH src;"
+
+		$proc = Start-Process -FilePath "sqlite3" -ArgumentList @($localTarget, $sql) -NoNewWindow -Wait -PassThru
+		if ($proc.ExitCode -ne 0) { Write-Error "sqlite3 reported an error (exit $($proc.ExitCode))."; exit 10 }
+
+		Write-Host "Pushing modified DB back to device temporary location..."
+		$basename = $targetDb
+		$res = Exec-Adb -Args @('push', $localTarget, "/data/local/tmp/$basename")
+		if ($res.ExitCode -ne 0) { Write-Error "adb push failed. Output: $($res.Output -join "`n")"; exit 11 }
+
+		Write-Host "Replacing device DB with merged DB..."
+		$shellCmd = "run-as $package cp /data/local/tmp/$basename /data/data/$package/databases/$basename && rm /data/local/tmp/$basename"
+		$res = Exec-Adb -Args @('shell', $shellCmd)
+		if ($res.ExitCode -ne 0) { Write-Error "Failed to replace DB on device. Output: $($res.Output -join "`n")"; exit 12 }
+
+		Write-Host "Update completed for Accounts table in $targetDb"
+		exit 0
+	}
+	finally {
+		Remove-Item -Path $tempDir -Recurse -Force -ErrorAction SilentlyContinue
+	}
+}
