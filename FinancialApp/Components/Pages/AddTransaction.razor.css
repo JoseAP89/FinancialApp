@@ -47,6 +47,11 @@
     }
 }
 
+#transaction-container {
+    margin-bottom: 50px;
+    background-color: #f0f8ff;
+}
+
 .line-number {
     display: inline-block;
     text-align: left;
