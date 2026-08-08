@@ -13,10 +13,10 @@
             <label>End date</label>
             <input class="form-control" type="date" value="@EndDateString" @onchange="OnEndDateChanged" />
         </div>
-        <div>
-            <button class="btn btn-primary" @onclick="ApplyFilter">Filter</button>
-            <button class="btn btn-outline-secondary ms-2" @onclick="ResetFilter">Reset</button>
-        </div>
+    </div>
+    <div id="control-button-box">
+        <button class="btn btn-primary" @onclick="ApplyFilter">Filter</button>
+        <button class="btn btn-outline-secondary ms-2" @onclick="ResetFilter">Reset</button>
     </div>
 
     @if (IsLoading)
@@ -34,7 +34,7 @@
             {
                 <div class="receipt">
                     <div class="receipt-header">
-                        <div class="brand"><i class="fas fa-receipt"></i> Transaction</div>
+                        <div class="brand"><i class="fas fa-receipt"></i>@(tx.Description ?? "Transaction")</div>
                         <div class="sub">@tx.Date.ToString("yyyy-MM-dd HH:mm")</div>
                     </div>
 
@@ -44,7 +44,7 @@
                             <li class="expense-item">
                                 <span class="item-name">
                                     <i class="fas fa-circle-notch"></i>
-                                    @line.Description
+                                    @(line.Description ?? "Transaction line")
                                     <span class="item-qty">x1</span>
                                 </span>
                                 <span class="item-price">@line.Amount.ToString("C")</span>

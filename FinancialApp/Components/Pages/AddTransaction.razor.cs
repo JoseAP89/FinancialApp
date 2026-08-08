@@ -111,7 +111,11 @@ namespace FinancialApp.Components.Pages
             !string.IsNullOrWhiteSpace(TransactionDescription)
             && TransactionLines is not null
             && TransactionLines.Any()
-            && TransactionLines.All(l => l.SelectedParentId.HasValue && l.SelectedChildId.HasValue && l.Amount > 0);
+            && TransactionLines.All(l => 
+                l.SelectedParentId.HasValue && 
+                l.SelectedChildId.HasValue && 
+                !string.IsNullOrWhiteSpace(l.Description) &&
+                l.Amount > 0);
 
         protected IEnumerable<string> GetValidationErrors()
         {
@@ -141,6 +145,11 @@ namespace FinancialApp.Components.Pages
                 if (!l.SelectedChildId.HasValue)
                 {
                     errors.Add($"Line {lineIndex}: sub-account must be selected.");
+                }
+
+                if (string.IsNullOrWhiteSpace(l.Description))
+                {
+                    errors.Add($"Line {lineIndex}: description must be selected.");
                 }
 
                 if (l.Amount <= 0)

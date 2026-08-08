@@ -8,6 +8,10 @@
     margin-bottom: 1rem;
 }
 
+#control-button-box {
+    margin-bottom: 10px;
+}
+
 .receipt-header { text-align: left; border-bottom: 1px dashed #e0dcd0; padding-bottom: 0.4rem; margin-bottom: 0.6rem; }
 .receipt-header .brand { font-weight: 700; color: #1e3c5c; display:flex; align-items:center; gap:8px; }
 .receipt-header .sub { font-size:0.85rem; color:#5b4f3a }

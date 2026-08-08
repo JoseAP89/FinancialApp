@@ -17,8 +17,6 @@ namespace FinancialApp.Components.Pages
         [Inject]
         protected ILogger<FinancialHistoryBase> Logger { get; set; } = null!;
 
-        protected List<Transaction> AllTransactions { get; set; } = new List<Transaction>();
-
         protected IEnumerable<Transaction> FilteredTransactions { get; set; } = Enumerable.Empty<Transaction>();
 
         protected bool IsLoading { get; set; }
@@ -35,15 +33,19 @@ namespace FinancialApp.Components.Pages
             IsLoading = true;
             try
             {
-                var items = await TransactionRepository.ListWithLinesAsync();
-                AllTransactions = items?.OrderByDescending(t => t.Date).ToList() ?? new List<Transaction>();
-                FilteredTransactions = AllTransactions;
+                // default dates
+                StartDateString = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1).ToString("yyyy-MM-dd");
+                var end = DateTime.Today;
+                // include entire day for end
+                end = end.AddDays(1).AddTicks(-1);
+                EndDateString = end.ToString("yyyy-MM-dd");
+                var items = await TransactionRepository.ListWithLinesByDateRangeAsync(StartDate!.Value, end);
+                FilteredTransactions = items?.ToList() ?? [];
             }
             catch (Exception ex)
             {
                 Logger?.LogError(ex, "Failed to load transactions for FinancialHistory");
-                AllTransactions = new List<Transaction>();
-                FilteredTransactions = AllTransactions;
+                FilteredTransactions = [];
             }
             finally
             {
@@ -51,28 +53,29 @@ namespace FinancialApp.Components.Pages
             }
         }
 
-        protected void ApplyFilter()
+        protected async Task ApplyFilter()
         {
             if (StartDate is null && EndDate is null)
             {
-                FilteredTransactions = AllTransactions;
+                FilteredTransactions = [];
                 return;
             }
 
             var start = StartDate?.Date ?? DateTime.MinValue.Date;
-            var end = EndDate?.Date ?? DateTime.MaxValue.Date;
+            var end = EndDate?.Date ?? DateTime.Today;
 
             // include entire day for end
             end = end.AddDays(1).AddTicks(-1);
 
-            FilteredTransactions = AllTransactions.Where(t => t.Date >= start && t.Date <= end).ToList();
+            var items = await TransactionRepository.ListWithLinesByDateRangeAsync(start, end);
+            FilteredTransactions = items?.ToList() ?? [];
         }
 
         protected void ResetFilter()
         {
             StartDateString = null;
             EndDateString = null;
-            FilteredTransactions = AllTransactions;
+            FilteredTransactions = [];
         }
 
         protected void OnStartDateChanged(ChangeEventArgs e)

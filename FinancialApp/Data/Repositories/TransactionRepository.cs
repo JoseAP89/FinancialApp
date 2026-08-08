@@ -51,5 +51,16 @@ namespace FinancialApp.Data.Repositories
         {
             return await ListAsync();
         }
+
+        public async Task<IEnumerable<Transaction>> ListWithLinesByDateRangeAsync(DateTime start, DateTime end)
+        {
+            // ensure end is inclusive
+            var endInclusive = end;
+            return await _dbSet
+                .Include(t => t.TransactionLines)
+                .Where(t => t.Date >= start && t.Date <= endInclusive)
+                .OrderByDescending(t => t.Date)
+                .ToListAsync();
+        }
     }
 }
