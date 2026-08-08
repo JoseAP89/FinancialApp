@@ -41,23 +41,29 @@
             {
                 <div class="receipt">
                     <div class="receipt-header">
-                        <div class="brand">@(tx.Description ?? "Transaction")</div>
+                        <div class="brand">
+                            <p>@(tx.Description ?? "Transaction")</p>
+                            <button class="btn btn-sm btn-outline-info" @onclick="() => ToggleExpenseList(tx.Id)">@(IsExpenseListVisible(tx.Id) ? "-" : "+")</button>
+                        </div>
                         <div class="sub">@tx.Date.ToString("MMM dd, yyyy HH:mm")</div>
                     </div>
 
-                    <ul class="expense-list">
-                        @foreach (var line in tx.TransactionLines)
-                        {
-                            <li class="expense-item">
-                                <span class="item-name">
-                                    <i class="fas fa-circle-notch"></i>
-                                    @(line.Description ?? "Transaction line")
-                                    <span class="item-qty">x1</span>
-                                </span>
-                                <span class="item-price">@line.Amount.ToString("C")</span>
-                            </li>
-                        }
-                    </ul>
+                    @if (IsExpenseListVisible(tx.Id))
+                    {
+                        <ul class="expense-list">
+                            @foreach (var line in tx.TransactionLines)
+                            {
+                                <li class="expense-item">
+                                    <span class="item-name">
+                                        <i class="fas fa-circle-notch"></i>
+                                        @(line.Description ?? "Transaction line")
+                                        <span class="item-qty">x1</span>
+                                    </span>
+                                    <span class="item-price">@line.Amount.ToString("C")</span>
+                                </li>
+                            }
+                        </ul>
+                    }
 
                     <div class="totals">
                         <div class="total-line grand-total">

@@ -22,6 +22,9 @@ namespace FinancialApp.Components.Pages
         protected bool IsLoading { get; set; }
         protected decimal TotalTransactionValue { get; set; }
 
+        // Track visibility state for each transaction's expense list (initially hidden)
+        protected HashSet<int> ExpandedTransactions { get; set; } = new HashSet<int>();
+
         // Bind to input type=date which uses yyyy-MM-dd format
         protected string? StartDateString { get; set; }
         protected string? EndDateString { get; set; }
@@ -103,6 +106,20 @@ namespace FinancialApp.Components.Pages
         protected void OnEndDateChanged(ChangeEventArgs e)
         {
             EndDateString = Convert.ToString(e.Value);
+        }
+
+        // Toggle visibility of the expense list for a transaction
+        protected void ToggleExpenseList(int transactionId)
+        {
+            if (ExpandedTransactions.Contains(transactionId))
+                ExpandedTransactions.Remove(transactionId);
+            else
+                ExpandedTransactions.Add(transactionId);
+        }
+
+        protected bool IsExpenseListVisible(int transactionId)
+        {
+            return ExpandedTransactions.Contains(transactionId);
         }
 
         private DateTime? ParseDate(string? s)

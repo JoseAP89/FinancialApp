@@ -42,7 +42,22 @@
 }
 
 .receipt-header { text-align: left; border-bottom: 1px dashed #e0dcd0; padding-bottom: 0.4rem; margin-bottom: 0.6rem; }
-.receipt-header .brand { font-weight: 700; color: #1e3c5c; display:flex; align-items:center; gap:8px; }
+.receipt-header .brand { 
+    font-weight: 700; 
+    color: #1e3c5c; 
+    display:flex; 
+    align-items:center; 
+    justify-content:space-between;
+    gap:2px; 
+}
+.brand button {
+    align-self: flex-start;
+    margin-top: 0px;
+    margin-left: 8px;
+    padding: 1px 3px;
+    font-size: 14px;
+    font-weight: bold;
+}
 .receipt-header .sub { font-size:0.85rem; color:#5b4f3a }
 
 .expense-list { list-style:none; margin:0; padding:0 }
