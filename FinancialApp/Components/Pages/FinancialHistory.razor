@@ -29,13 +29,20 @@
     }
     else
     {
+        <div id="total-transaction-value">
+            <div class="total-row">
+                <span class="total-lbl">Total</span>
+                <span class="total-value">@TotalTransactionValue.ToString("C")</span>
+            </div>
+            <div class="date-range">@StartDate?.ToString("MMM dd, yyyy") - @EndDate?.ToString("MMM dd, yyyy")</div>
+        </div>
         <div class="history-list">
             @foreach (var tx in FilteredTransactions.OrderByDescending(t => t.Date))
             {
                 <div class="receipt">
                     <div class="receipt-header">
-                        <div class="brand"><i class="fas fa-receipt"></i>@(tx.Description ?? "Transaction")</div>
-                        <div class="sub">@tx.Date.ToString("yyyy-MM-dd HH:mm")</div>
+                        <div class="brand">@(tx.Description ?? "Transaction")</div>
+                        <div class="sub">@tx.Date.ToString("MMM dd, yyyy HH:mm")</div>
                     </div>
 
                     <ul class="expense-list">

@@ -52,13 +52,14 @@ namespace FinancialApp.Data.Repositories
             return await ListAsync();
         }
 
-        public async Task<IEnumerable<Transaction>> ListWithLinesByDateRangeAsync(DateTime start, DateTime end)
+        public async Task<IEnumerable<Transaction>> ListWithNoSystemLinesByDateRangeAsync(DateTime start, DateTime end)
         {
             // ensure end is inclusive
             var endInclusive = end;
+            // Include only transaction lines whose related account is not a system account
             return await _dbSet
-                .Include(t => t.TransactionLines)
                 .Where(t => t.Date >= start && t.Date <= endInclusive)
+                .Include(t => t.TransactionLines.Where(l => l.Account != null && !l.Account.IsSystem))
                 .OrderByDescending(t => t.Date)
                 .ToListAsync();
         }

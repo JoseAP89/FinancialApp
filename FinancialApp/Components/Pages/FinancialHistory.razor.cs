@@ -20,6 +20,7 @@ namespace FinancialApp.Components.Pages
         protected IEnumerable<Transaction> FilteredTransactions { get; set; } = Enumerable.Empty<Transaction>();
 
         protected bool IsLoading { get; set; }
+        protected decimal TotalTransactionValue { get; set; }
 
         // Bind to input type=date which uses yyyy-MM-dd format
         protected string? StartDateString { get; set; }
@@ -39,8 +40,9 @@ namespace FinancialApp.Components.Pages
                 // include entire day for end
                 end = end.AddDays(1).AddTicks(-1);
                 EndDateString = end.ToString("yyyy-MM-dd");
-                var items = await TransactionRepository.ListWithLinesByDateRangeAsync(StartDate!.Value, end);
+                var items = await TransactionRepository.ListWithNoSystemLinesByDateRangeAsync(StartDate!.Value, end);
                 FilteredTransactions = items?.ToList() ?? [];
+                TotalTransactionValue = GetTotalTransactionValue(FilteredTransactions); 
             }
             catch (Exception ex)
             {
@@ -67,8 +69,9 @@ namespace FinancialApp.Components.Pages
             // include entire day for end
             end = end.AddDays(1).AddTicks(-1);
 
-            var items = await TransactionRepository.ListWithLinesByDateRangeAsync(start, end);
+            var items = await TransactionRepository.ListWithNoSystemLinesByDateRangeAsync(start, end);
             FilteredTransactions = items?.ToList() ?? [];
+            TotalTransactionValue = GetTotalTransactionValue(FilteredTransactions);
         }
 
         protected void ResetFilter()
@@ -76,6 +79,20 @@ namespace FinancialApp.Components.Pages
             StartDateString = null;
             EndDateString = null;
             FilteredTransactions = [];
+            TotalTransactionValue = 0;
+        }
+
+        protected decimal GetTotalTransactionValue(IEnumerable<Transaction> transactions)
+        {
+            decimal total = 0;
+            foreach (var transaction in transactions)
+            {
+                foreach (var line in transaction.TransactionLines)
+                {
+                    total += line.Amount;
+                }
+            }
+            return total;
         }
 
         protected void OnStartDateChanged(ChangeEventArgs e)

@@ -25,6 +25,14 @@ namespace FinancialApp.Data.Repositories
                 .ToListAsync();
         }
 
+        public async Task<IEnumerable<Account>> ListSystemAccountsAsync()
+        {
+            return await _dbSet
+                .Where(a => a.IsSystem)
+                .ToListAsync();
+        }
+
+
         public async Task<IEnumerable<Account>> GetAllChildAccountsByParentIdAsync(int parentId)
         {
             return await _dbSet
@@ -52,5 +60,6 @@ namespace FinancialApp.Data.Repositories
                 .OrderBy(a => a.Name)
                 .ToListAsync();
         }
+
     }
 }

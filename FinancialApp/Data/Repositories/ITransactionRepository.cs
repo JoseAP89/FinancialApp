@@ -12,7 +12,7 @@ namespace FinancialApp.Data.Repositories
         // Returns all transactions including their transaction lines
         Task<IEnumerable<Transaction>> ListWithLinesAsync();
 
-        // Returns transactions including their lines between the given start and end (inclusive)
-        Task<IEnumerable<Transaction>> ListWithLinesByDateRangeAsync(DateTime start, DateTime end);
+        // Returns transactions including their lines, without system account lines, between the given start and end (inclusive)
+        Task<IEnumerable<Transaction>> ListWithNoSystemLinesByDateRangeAsync(DateTime start, DateTime end);
     }
 }
