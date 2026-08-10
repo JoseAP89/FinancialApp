@@ -68,7 +68,7 @@
                     <div class="totals">
                         <div class="total-line grand-total">
                             <span class="label">TOTAL</span>
-                            <span class="value">@tx.TransactionLines.Sum(l => l.Amount).ToString("C")</span>
+                            <span class="value">@tx.TransactionLines.Sum(l => l.Amount * (l.Quantity <= 0 ? 1 : l.Quantity)).ToString("C")</span>
                         </div>
                     </div>
 

@@ -141,6 +141,20 @@ With this structure, generating financial statements is as easy as filtering by 
     - **Expenses:** Your nested categories (Groceries, Auto, Gas).
     - **Net Income:** Income minus Expenses. This is the exact amount you saved during that timeframe!
 
+## Balance Sheet Elements (Financial Position)
+
+**Assets:** Economic resources owned or controlled by a business that will provide future economic benefits.
+
+**Liabilities:** Present obligations of a business arising from past events, requiring a future outflow of resources.
+
+**Equity:** The residual interest in the assets of the business after deducting all of its liabilities.
+
+## Income Statement Elements (Financial Performance)
+
+**Revenue (Income):** Increases in economic benefits during the accounting period, resulting in an increase in equity (other than contributions from equity participants).
+
+**Expenses:** Decreases in economic benefits during the accounting period, resulting in a decrease in equity (other than distributions to equity participants).
+
 ## 5. Practical Ledger Examples
 
 Here is how everyday money moves route through this schema to ensure your books always balance.
@@ -181,29 +195,159 @@ All of this is built on the core framework of financial accounting. These five c
          └─► Equity
 ```
 
+To ensure the accounting equation (Asset+Expense) - (Liability+Equity+Revenue) = 0 (which is the same as Debits - Credits = 0), you need to automatically add balancing transaction lines when users only record their expenses or income.
 
-### Balance Sheet Elements (Financial Position)
+Here's the complete solution:
 
-**Assets:** Economic resources owned or controlled by a business that will provide future economic benefits.
+# Understanding the Sign Convention
 
-**Liabilities:** Present obligations of a business arising from past events, requiring a future outflow of resources.
+The rules:
+- Debit accounts (+) : ASSET, EXPENSE
+- Credit accounts (-) : LIABILITY, EQUITY, REVENUE
 
-**Equity:** The residual interest in the assets of the business after deducting all of its liabilities.
+For a transaction to be balanced, the sum of positive amounts (Debits) must equal the sum of negative amounts (Credits).
 
-### Income Statement Elements (Financial Performance)
+# Logic to Auto-Balance Transactions
 
-**Revenue (Income):** Increases in economic benefits during the accounting period, resulting in an increase in equity (other than contributions from equity participants).
+When a user inserts transaction lines, you need to:
+1. Calculate the current balance
+2. Determine which account to use as the balancing account
+3. Insert a compensating line
 
-**Expenses:** Decreases in economic benefits during the accounting period, resulting in a decrease in equity (other than distributions to equity participants).
+# Example: User records an expense
 
-### Minor Structural Exceptions
+```
+-- User records: "Bought groceries for $50"
+-- They would create:
+-- TransactionLine: AccountId=Groceries, Amount=50.00 (Debit)
 
-Depending on the accounting standard used, such as IFRS or US GAAP, standard setters occasionally highlight a few specific subsets of the main five elements:
+-- The system would auto-balance by adding:
+-- TransactionLine: AccountId=CheckingAccount, Amount=-50.00 (Credit)
+```
 
-- **Gains and Losses:** US GAAP lists "Gains" and "Losses" as distinct elements. However, they are conceptually identical to Revenue and Expenses, representing peripheral or incidental transactions rather than core operations.
-- **Investments by / Distributions to Owners:** These are often separated out into their own categories to track equity changes, but they fundamentally remain sub-components of the Equity parent element.
+# Accounts to Hide from Users
 
+We hide certain accounts from the user interface to prevent confusion and maintain data integrity.
+Must-Hide Accounts:
+- All Equity accounts - These are system-calculated and should never be directly manipulated
+- Contra-asset accounts (like Accumulated Depreciation)
+- Balancing/cash accounts used for auto-balancing
 
+# Understanding Liability Accounts in Your System
+
+Under your accounting rules:
+- LIABILITY accounts are negative (-) (normal Credit balance)
+- When you increase a liability (take out a loan), you CREDIT the liability account
+- When you decrease a liability (make a payment), you DEBIT the liability account
+
+**Scenario A: Taking Out a New Loan**
+When you take out a loan, you receive cash (or an asset) and create a liability:
+```
+-- Example: Taking out a $10,000 Auto Loan
+-- User records:
+-- 1. They received $10,000 in their checking account (DEBIT - Asset increases)
+-- 2. They now owe $10,000 (CREDIT - Liability increases)
+-- The balanced transaction would be:
+INSERT INTO TransactionLines (TransactionId, AccountId, Amount, Description) VALUES
+(1, (SELECT Id FROM Accounts WHERE Name='Checking Account'), 10000.00, 'Auto loan proceeds'),  -- DEBIT (+)
+(1, (SELECT Id FROM Accounts WHERE Name='Auto Loan'), -10000.00, 'Auto loan balance');        -- CREDIT (-)
+```
+
+**Scenario B: Making a Loan Payment**
+When you make a payment, it typically splits between:
+- Principal (reduces the liability)
+- Interest (an expense)
+```
+-- Example: $500 auto loan payment ($400 principal + $100 interest)
+-- User records:
+INSERT INTO TransactionLines (TransactionId, AccountId, Amount, Description) VALUES
+(2, (SELECT Id FROM Accounts WHERE Name='Auto Loan'), 400.00, 'Principal payment'),     -- DEBIT (+ reduces liability)
+(2, (SELECT Id FROM Accounts WHERE Name='Interest Expense'), 100.00, 'Interest payment'); -- DEBIT (+ expense)
+
+-- System auto-balances with:
+INSERT INTO TransactionLines (TransactionId, AccountId, Amount, Description) VALUES
+(2, (SELECT Id FROM Accounts WHERE Name='Checking Account'), -500.00, 'Auto-balance: Payment'); -- CREDIT (-)
+```
+
+# Common Liability Scenarios and Auto-Balancing
+
+**Scenario 1: Recording a Loan Payment**
+```
+-- User records (manual entry by user):
+INSERT INTO TransactionLines (TransactionId, AccountId, Amount) VALUES
+(100, (SELECT Id FROM Accounts WHERE Name='Auto Loan'), 400.00, 'Principal'),        -- DEBIT (reduces liability)
+(100, (SELECT Id FROM Accounts WHERE Name='Interest Expense'), 100.00, 'Interest');  -- DEBIT (expense)
+
+-- Total debits: +500.00
+-- System auto-balances:
+INSERT INTO TransactionLines (TransactionId, AccountId, Amount) VALUES
+(100, (SELECT Id FROM Accounts WHERE Name='Checking Account'), -500.00, 'Auto-balance: Payment');
+
+-- Result: Balanced! (Debits = Credits)
+-- Debits: 400 + 100 = 500
+-- Credits: 500
+```
+
+**Scenario 2: Taking Out a New Loan**
+```
+-- User records:
+INSERT INTO TransactionLines (TransactionId, AccountId, Amount) VALUES
+(101, (SELECT Id FROM Accounts WHERE Name='Auto Loan'), -25000.00, 'New car loan');  -- CREDIT (increases liability)
+
+-- Total debits: 0, Credits: 25000
+-- System auto-balances:
+INSERT INTO TransactionLines (TransactionId, AccountId, Amount) VALUES
+(101, (SELECT Id FROM Accounts WHERE Name='Checking Account'), 25000.00, 'Auto-balance: Loan proceeds');
+
+-- Result: Balanced! (Debits = Credits)
+-- Debits: 25000
+-- Credits: 25000
+```
+
+**Scenario 3: Credit Card Purchase**
+```
+-- User records a $100 purchase on credit card:
+INSERT INTO TransactionLines (TransactionId, AccountId, Amount) VALUES
+(102, (SELECT Id FROM Accounts WHERE Name='Groceries'), 100.00, 'Grocery purchase');  -- DEBIT (expense)
+
+-- Total debits: 100, Credits: 0
+-- System auto-balances:
+INSERT INTO TransactionLines (TransactionId, AccountId, Amount) VALUES
+(102, (SELECT Id FROM Accounts WHERE Name='Credit Card'), -100.00, 'Auto-balance: Credit card purchase');
+
+-- Result: Balanced! (Debits = Credits)
+-- Debits: 100
+-- Credits: 100
+```
+
+**Scenario 4: Credit Card Payment**
+```
+-- User records a $200 credit card payment:
+INSERT INTO TransactionLines (TransactionId, AccountId, Amount) VALUES
+(103, (SELECT Id FROM Accounts WHERE Name='Credit Card'), 200.00, 'Credit card payment');  -- DEBIT (reduces liability)
+
+-- Total debits: 200, Credits: 0
+-- System auto-balances:
+INSERT INTO TransactionLines (TransactionId, AccountId, Amount) VALUES
+(103, (SELECT Id FROM Accounts WHERE Name='Checking Account'), -200.00, 'Auto-balance: Payment');
+
+-- Result: Balanced! (Debits = Credits)
+-- Debits: 200
+-- Credits: 200
+```
+
+# Key Takeaway on balancing-out accounts
+
+Always use a Cash/Bank account as the balancing account for liabilities, but:
+- For loan payments: Credit Cash (you're paying money)
+- For new loans: Debit Cash (you're receiving money)
+- For credit card purchases: Credit Credit Card (you're increasing debt)
+- For credit card payments: Debit Credit Card (you're reducing debt)
+
+The auto-balance logic should detect whether the transaction involves:
+1. Paying a liability → Credit Cash
+2. Increasing a liability → Debit Cash
+3. Paying with credit → Credit Credit Card
 
 Notes
 -----
