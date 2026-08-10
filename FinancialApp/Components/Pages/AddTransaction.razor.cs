@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.Logging;
 using FinancialApp.Data.Models;
 using FinancialApp.Data.Repositories;
+using FinancialApp.Core.DTOs;
 
 namespace FinancialApp.Components.Pages
 {
@@ -54,7 +55,7 @@ namespace FinancialApp.Components.Pages
             }
         }
 
-        protected async Task OnChildChangedForLine(ChangeEventArgs e, TransactionLineDto line)
+        protected async Task OnChildChangedForLine(ChangeEventArgs e, TransactionLineDTO line)
         {
             if (int.TryParse(Convert.ToString(e.Value), out var id))
             {
@@ -77,23 +78,7 @@ namespace FinancialApp.Components.Pages
             await InvokeAsync(StateHasChanged);
         }
 
-        // UI transaction line DTO for building lines in the UI before mapping to Data.Models.TransactionLine
-        protected class TransactionLineDto
-        {
-            public int? SelectedParentId { get; set; }
-            public List<Account> ChildAccounts { get; set; } = new List<Account>();
-            public int? SelectedChildId { get; set; }
-            public string? Description { get; set; }
-            public decimal Amount { get; set; }
-            public int Quantity { get; set; } = 1;
-            // Popover UI state and timers
-            public bool IsParentPopoverVisible { get; set; }
-            public System.Timers.Timer? ParentPopoverTimer { get; set; }
-            public bool IsChildPopoverVisible { get; set; }
-            public System.Timers.Timer? ChildPopoverTimer { get; set; }
-        }
-
-        protected List<TransactionLineDto> TransactionLines { get; set; } = new List<TransactionLineDto>();
+        protected List<TransactionLineDTO> TransactionLines { get; set; } = new List<TransactionLineDTO>();
 
         protected Transaction CurrentTransaction { get; set; } = new Transaction();
 
@@ -170,11 +155,11 @@ namespace FinancialApp.Components.Pages
 
         protected void AddTransactionLine()
         {
-            TransactionLines.Add(new TransactionLineDto());
+            TransactionLines.Add(new TransactionLineDTO());
             ClearValidation();
         }
 
-        protected void RemoveTransactionLine(TransactionLineDto line)
+        protected void RemoveTransactionLine(TransactionLineDTO line)
         {
             // dispose any timers associated with the line to avoid leaks
             if (line.ParentPopoverTimer is not null)
@@ -191,7 +176,7 @@ namespace FinancialApp.Components.Pages
             ClearValidation();
         }
 
-        protected async Task OnParentChangedForLine(ChangeEventArgs e, TransactionLineDto line)
+        protected async Task OnParentChangedForLine(ChangeEventArgs e, TransactionLineDTO line)
         {
             if (int.TryParse(Convert.ToString(e.Value), out var parentId))
             {
@@ -235,7 +220,7 @@ namespace FinancialApp.Components.Pages
         }
 
         // Toggle parent popover visibility. Clicking again will close. Auto-closes after 12s.
-        protected void ToggleParentPopover(TransactionLineDto line)
+        protected void ToggleParentPopover(TransactionLineDTO line)
         {
             if (line.IsParentPopoverVisible)
             {
@@ -276,7 +261,7 @@ namespace FinancialApp.Components.Pages
         }
 
         // Toggle child popover visibility. Clicking again will close. Auto-closes after 12s.
-        protected void ToggleChildPopover(TransactionLineDto line)
+        protected void ToggleChildPopover(TransactionLineDTO line)
         {
             if (line.IsChildPopoverVisible)
             {
@@ -313,21 +298,21 @@ namespace FinancialApp.Components.Pages
             }
         }
 
-        private string GetParentDescription(TransactionLineDto line)
+        private string GetParentDescription(TransactionLineDTO line)
         {
             if (!line.SelectedParentId.HasValue) return string.Empty;
             var acct = ParentAccounts?.FirstOrDefault(a => a.Id == line.SelectedParentId.Value);
             return acct?.Description ?? string.Empty;
         }
 
-        private string GetChildDescription(TransactionLineDto line)
+        private string GetChildDescription(TransactionLineDTO line)
         {
             if (!line.SelectedChildId.HasValue) return string.Empty;
             var acct = line.ChildAccounts?.FirstOrDefault(a => a.Id == line.SelectedChildId.Value);
             return acct?.Description ?? string.Empty;
         }
 
-        private async Task LoadChildAccountsForLineAsync(TransactionLineDto line, int parentId)
+        private async Task LoadChildAccountsForLineAsync(TransactionLineDTO line, int parentId)
         {
             try
             {
@@ -347,19 +332,20 @@ namespace FinancialApp.Components.Pages
             var tx = new Transaction
             {
                 Description = TransactionDescription,
-                Date = DateTime.UtcNow
+                Date = DateTime.UtcNow,
+                TransactionLines = []
             };
 
-            foreach (var l in TransactionLines)
+            foreach (TransactionLineDTO line in TransactionLines)
             {
-                if (l.SelectedChildId.HasValue && l.Amount > 0)
+                if (line.SelectedChildId.HasValue && Math.Abs(line.Amount) > 0.01m)
                 {
                     tx.TransactionLines.Add(new TransactionLine
                     {
-                        AccountId = l.SelectedChildId.Value,
-                        Amount = l.Amount,
-                        Description = l.Description,
-                        Quantity = l.Quantity
+                        AccountId = line.SelectedChildId.Value,
+                        Amount = line.Amount,
+                        Description = line.Description,
+                        Quantity = line.Quantity
                     });
                 }
             }
@@ -372,26 +358,30 @@ namespace FinancialApp.Components.Pages
         //   ASSET and EXPENSE contribute as debits (+), LIABILITY/EQUITY/REVENUE as credits (-)
         // - If the absolute balance > 0.01, find a cash/bank ASSET account and append a
         //   compensating TransactionLine with Amount = -balance and Description = "Auto-balance entry".
-        protected async Task BalanceTransaction(Transaction transaction)
+        protected async Task BalanceTransaction()
         {
-            if (transaction == null) return;
+            if (TransactionLines == null) return;
 
             // Calculate current balance
             decimal balance = 0m;
+            decimal credit = 0m;
 
-            foreach (var line in transaction.TransactionLines)
+            foreach (TransactionLineDTO line in TransactionLines)
             {
                 try
                 {
-                    var acct = await AccountRepository.GetByIdAsync(line.AccountId);
+                    var acct = await AccountRepository.GetByIdAsync(line.SelectedChildId!.Value);
                     if (acct is null)
                     {
-                        Logger?.LogWarning("BalanceTransaction: account id {AccountId} not found; skipping line in balance calc.", line.AccountId);
+                        Logger?.LogWarning("BalanceTransaction: account id {AccountId} not found; skipping line in balance calc.", line.SelectedChildId!.Value);
                         continue;
                     }
-
                     var lineValue = line.Amount * (line.Quantity <= 0 ? 1 : line.Quantity);
-                    if (acct.FinancialStatement == FinancialStatement.ASSET || acct.FinancialStatement == FinancialStatement.EXPENSE)
+                    if (line.PaidWithCreditCard)
+                    {
+                        credit += (-1*line.Amount);
+                    }
+                    else if (acct.FinancialStatement == FinancialStatement.ASSET || acct.FinancialStatement == FinancialStatement.EXPENSE)
                     {
                         // Debit
                         balance += lineValue;
@@ -404,38 +394,61 @@ namespace FinancialApp.Components.Pages
                 }
                 catch (Exception ex)
                 {
-                    Logger?.LogError(ex, "BalanceTransaction: failed while reading account for line account id {AccountId}", line.AccountId);
+                    Logger?.LogError(ex, "BalanceTransaction: failed while reading account for line account id {AccountId}", line.SelectedChildId!.Value);
                 }
             }
 
             // If not balanced beyond threshold, add compensating line
-            if (Math.Abs(balance) > 0.01m)
+            if (Math.Abs(balance) > 0.01m || Math.Abs(credit) > 0.01m)
             {
                 try
                 {
                     // Try to find a suitable cash/bank asset account by listing accounts and searching names
                     var allAccounts = (await AccountRepository.ListAsync())?.ToList() ?? new List<Account>();
-                    var checkAccount = allAccounts
-                        .FirstOrDefault(a => 
-                            a.FinancialStatement == FinancialStatement.ASSET
-                            && (a.Name?.IndexOf("Checking Account", StringComparison.OrdinalIgnoreCase) >= 0)
-                        );
-                    if (checkAccount is null)
+                    if (Math.Abs(balance) > 0.01m)
                     {
-                        Logger?.LogWarning("BalanceTransaction: no cash/bank ASSET account found to auto-balance transaction (balance={Balance}).", balance);
-                        return;
+                        var checkAccount = allAccounts
+                            .FirstOrDefault(a =>
+                                a.FinancialStatement == FinancialStatement.ASSET
+                                && (a.Name?.IndexOf("Checking Account", StringComparison.OrdinalIgnoreCase) >= 0)
+                            );
+                        if (checkAccount is null)
+                        {
+                            Logger?.LogWarning("BalanceTransaction: no cash/bank ASSET account found to auto-balance transaction (balance={Balance}).", balance);
+                            return;
+                        }
+                        var compensating = new TransactionLineDTO
+                        {
+                            SelectedChildId = checkAccount.Id,
+                            Amount = decimal.Round(-balance, 2, MidpointRounding.ToEven),
+                            Description = "Auto-balance entry",
+                            Quantity = 1
+                        };
+                        TransactionLines.Add(compensating);
+                        Logger?.LogInformation("BalanceTransaction: added auto-balance line to account id {AccountId} amount {Amount}.", compensating.SelectedChildId, compensating.Amount);
                     }
-
-                    var compensating = new TransactionLine
+                    if (Math.Abs(credit) > 0.01m)
                     {
-                        AccountId = checkAccount.Id,
-                        Amount = decimal.Round(-balance, 2, MidpointRounding.ToEven),
-                        Description = "Auto-balance entry"
-                    };
-                    compensating.Quantity = 1;
-
-                    transaction.TransactionLines.Add(compensating);
-                    Logger?.LogInformation("BalanceTransaction: added auto-balance line to account id {AccountId} amount {Amount}.", compensating.AccountId, compensating.Amount);
+                        var creditAccount = allAccounts
+                            .FirstOrDefault(a =>
+                                a.FinancialStatement == FinancialStatement.LIABILITY
+                                && (a.Name?.IndexOf("Credit Card", StringComparison.OrdinalIgnoreCase) >= 0)
+                            );
+                        if (creditAccount is null)
+                        {
+                            Logger?.LogWarning("BalanceTransaction: no LIABILITY account found to auto-balance transaction (balance={Balance}).", credit);
+                            return;
+                        }
+                        var compensating = new TransactionLineDTO
+                        {
+                            SelectedChildId = creditAccount.Id,
+                            Amount = decimal.Round(credit, 2, MidpointRounding.ToEven),
+                            Description = "Auto-balance entry",
+                            Quantity = 1
+                        };
+                        TransactionLines.Add(compensating);
+                        Logger?.LogInformation("BalanceTransaction: added auto-balance line to account id {AccountId} amount {Amount}.", compensating.SelectedChildId, compensating.Amount);
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -455,8 +468,8 @@ namespace FinancialApp.Components.Pages
                 return;
             }
 
+            await BalanceTransaction();
             var tx = BuildTransactionFromInputs();
-            await BalanceTransaction(tx);
             Logger?.LogDebug("CreateTransaction debug: {@Transaction}", tx);
 
             try
@@ -499,14 +512,14 @@ namespace FinancialApp.Components.Pages
             ClearValidation();
         }
 
-        protected async Task OnLineDescriptionChanged(ChangeEventArgs e, TransactionLineDto line)
+        protected async Task OnLineDescriptionChanged(ChangeEventArgs e, TransactionLineDTO line)
         {
             line.Description = Convert.ToString(e.Value);
             ClearValidation();
             await InvokeAsync(StateHasChanged);
         }
 
-        protected async Task OnLineAmountChanged(ChangeEventArgs e, TransactionLineDto line)
+        protected async Task OnLineAmountChanged(ChangeEventArgs e, TransactionLineDTO line)
         {
             var s = Convert.ToString(e.Value);
             if (decimal.TryParse(s, out var amount))
@@ -522,7 +535,7 @@ namespace FinancialApp.Components.Pages
             await InvokeAsync(StateHasChanged);
         }
 
-        protected async Task OnLineQuantityChanged(ChangeEventArgs e, TransactionLineDto line)
+        protected async Task OnLineQuantityChanged(ChangeEventArgs e, TransactionLineDTO line)
         {
             var s = Convert.ToString(e.Value);
             if (int.TryParse(s, out var quantity))
@@ -534,6 +547,13 @@ namespace FinancialApp.Components.Pages
                 line.Quantity = 1;
             }
 
+            ClearValidation();
+            await InvokeAsync(StateHasChanged);
+        }
+        
+        protected async Task OnLinePaidWithCreditCardChanged(ChangeEventArgs e, TransactionLineDTO line)
+        {
+            line.PaidWithCreditCard = Convert.ToBoolean(e.Value);
             ClearValidation();
             await InvokeAsync(StateHasChanged);
         }
