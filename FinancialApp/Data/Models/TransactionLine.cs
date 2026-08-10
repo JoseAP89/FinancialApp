@@ -20,6 +20,10 @@ namespace FinancialApp.Data.Models
         // Amount for this line
         public decimal Amount { get; set; }
 
+        // Quantity for this line (new column)
+        // Default is 1 and must be >= 1
+        public int Quantity { get; set; } = 1;
+
         // Optional description for the transaction line
         public string? Description { get; set; }
     }

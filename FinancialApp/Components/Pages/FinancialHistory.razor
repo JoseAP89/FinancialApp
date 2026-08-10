@@ -57,7 +57,7 @@
                                     <span class="item-name">
                                         <i class="fas fa-circle-notch"></i>
                                         @(line.Description ?? "Transaction line")
-                                        <span class="item-qty">x1</span>
+                                        <span class="item-qty">x@(line.Quantity <= 0 ? 1 : line.Quantity)</span>
                                     </span>
                                     <span class="item-price">@line.Amount.ToString("C")</span>
                                 </li>

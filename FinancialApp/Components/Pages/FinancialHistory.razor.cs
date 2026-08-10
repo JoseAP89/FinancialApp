@@ -92,7 +92,8 @@ namespace FinancialApp.Components.Pages
             {
                 foreach (var line in transaction.TransactionLines)
                 {
-                    total += line.Amount;
+                    var qty = line.Quantity <= 0 ? 1 : line.Quantity;
+                    total += line.Amount * qty;
                 }
             }
             return total;

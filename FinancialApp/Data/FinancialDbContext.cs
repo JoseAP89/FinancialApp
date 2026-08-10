@@ -49,6 +49,13 @@ namespace FinancialApp.Data
                 // TransactionLine.Description is a string stored as TEXT in SQLite
                 entity.Property(a => a.Description).HasColumnType("TEXT");
 
+                // Quantity: integer, required, default 1 and check constraint to ensure >= 1
+                entity.Property(tl => tl.Quantity)
+                      .IsRequired()
+                      .HasDefaultValue(1);
+
+                entity.ToTable(t => t.HasCheckConstraint("CK_TransactionLines_Quantity", "Quantity >= 1"));
+
                 // TransactionLine -> Transaction (many lines per transaction)
                 entity.HasOne(tl => tl.Transaction)
                       .WithMany(t => t.TransactionLines)

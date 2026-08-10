@@ -30,6 +30,7 @@ CREATE TABLE IF NOT EXISTS TransactionLines (
     AccountId INTEGER NOT NULL,
     Amount DECIMAL(18,2) NOT NULL,
     Description TEXT,
+    Quantity INTEGER NOT NULL DEFAULT 1 CHECK (Quantity >= 1),
     FOREIGN KEY (TransactionId) REFERENCES Transactions(Id) ON DELETE CASCADE,
     FOREIGN KEY (AccountId) REFERENCES Accounts(Id) ON DELETE RESTRICT
 );

@@ -85,6 +85,7 @@ namespace FinancialApp.Components.Pages
             public int? SelectedChildId { get; set; }
             public string? Description { get; set; }
             public decimal Amount { get; set; }
+            public int Quantity { get; set; } = 1;
             // Popover UI state and timers
             public bool IsParentPopoverVisible { get; set; }
             public System.Timers.Timer? ParentPopoverTimer { get; set; }
@@ -115,7 +116,8 @@ namespace FinancialApp.Components.Pages
                 l.SelectedParentId.HasValue && 
                 l.SelectedChildId.HasValue && 
                 !string.IsNullOrWhiteSpace(l.Description) &&
-                l.Amount > 0);
+                l.Amount > 0 &&
+                l.Quantity >= 1);
 
         protected IEnumerable<string> GetValidationErrors()
         {
@@ -155,6 +157,11 @@ namespace FinancialApp.Components.Pages
                 if (l.Amount <= 0)
                 {
                     errors.Add($"Line {lineIndex}: amount must be greater than zero.");
+                }
+
+                if (l.Quantity < 1)
+                {
+                    errors.Add($"Line {lineIndex}: quantity must be at least 1.");
                 }
             }
 
@@ -351,7 +358,8 @@ namespace FinancialApp.Components.Pages
                     {
                         AccountId = l.SelectedChildId.Value,
                         Amount = l.Amount,
-                        Description = l.Description
+                        Description = l.Description,
+                        Quantity = l.Quantity
                     });
                 }
             }
@@ -382,15 +390,16 @@ namespace FinancialApp.Components.Pages
                         continue;
                     }
 
+                    var lineValue = line.Amount * (line.Quantity <= 0 ? 1 : line.Quantity);
                     if (acct.FinancialStatement == FinancialStatement.ASSET || acct.FinancialStatement == FinancialStatement.EXPENSE)
                     {
                         // Debit
-                        balance += line.Amount;
+                        balance += lineValue;
                     }
                     else
                     {
                         // Credit
-                        balance -= line.Amount;
+                        balance -= lineValue;
                     }
                 }
                 catch (Exception ex)
@@ -423,6 +432,7 @@ namespace FinancialApp.Components.Pages
                         Amount = decimal.Round(-balance, 2, MidpointRounding.ToEven),
                         Description = "Auto-balance entry"
                     };
+                    compensating.Quantity = 1;
 
                     transaction.TransactionLines.Add(compensating);
                     Logger?.LogInformation("BalanceTransaction: added auto-balance line to account id {AccountId} amount {Amount}.", compensating.AccountId, compensating.Amount);
@@ -506,6 +516,22 @@ namespace FinancialApp.Components.Pages
             else
             {
                 line.Amount = 0;
+            }
+
+            ClearValidation();
+            await InvokeAsync(StateHasChanged);
+        }
+
+        protected async Task OnLineQuantityChanged(ChangeEventArgs e, TransactionLineDto line)
+        {
+            var s = Convert.ToString(e.Value);
+            if (int.TryParse(s, out var quantity))
+            {
+                line.Quantity = quantity;
+            }
+            else
+            {
+                line.Quantity = 1;
             }
 
             ClearValidation();
