@@ -7,6 +7,7 @@ using System.IO;
 using System;
 using Microsoft.Maui.Storage;
 using FinancialApp.Infrastructure.Services;
+using FinancialApp.Core.Services;
 
 namespace FinancialApp
 {
@@ -87,6 +88,7 @@ namespace FinancialApp
             // Toast service acts as a global in-process event hub; register as singleton so
             // all components receive the same instance and events propagate as expected.
             builder.Services.AddSingleton<IToastService, ToastService>();
+            builder.Services.AddScoped<ITransactionBalancingService, TransactionBalancingService>();
             builder.Services.AddScoped<Data.Repositories.IAccountRepository, Data.Repositories.AccountRepository>();
             builder.Services.AddScoped<Data.Repositories.ITransactionRepository, Data.Repositories.TransactionRepository>();
             builder.Services.AddScoped<Data.Repositories.ITransactionLineRepository, Data.Repositories.TransactionLineRepository>();

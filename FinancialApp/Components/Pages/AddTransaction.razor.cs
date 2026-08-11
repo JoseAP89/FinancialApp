@@ -9,11 +9,15 @@ using FinancialApp.Data.Models;
 using FinancialApp.Data.Repositories;
 using FinancialApp.Core.DTOs;
 using FinancialApp.Infrastructure.Services;
+using FinancialApp.Core.Services;
 
 namespace FinancialApp.Components.Pages
 {
     public partial class AddTransaction : ComponentBase
     {
+        [Inject]
+        protected ITransactionBalancingService TransactionBalancingService { get; set; } = null!;
+
         [Inject]
         protected IAccountRepository AccountRepository { get; set; } = null!;
 
@@ -362,115 +366,6 @@ namespace FinancialApp.Components.Pages
             return tx;
         }
 
-        // Auto-balance a transaction similar to the provided python implementation:
-        // - Calculate current balance using account FinancialStatement:
-        //   ASSET and EXPENSE contribute as debits (+), LIABILITY/EQUITY/REVENUE as credits (-)
-        // - If the absolute balance > 0.01, find a cash/bank ASSET account and append a
-        //   compensating TransactionLine with Amount = -balance and Description = "Auto-balance entry".
-        protected async Task BalanceTransaction()
-        {
-            if (TransactionLines == null) return;
-
-            // Calculate current balance
-            decimal debit = 0m;
-            decimal credit = 0m;
-
-            foreach (TransactionLineDTO line in TransactionLines)
-            {
-                try
-                {
-                    var acct = line.SelectedChild;
-                    if (acct is null)
-                    {
-                        Logger?.LogWarning("BalanceTransaction: account id {AccountId} not found; skipping line in balance calc.", line.SelectedChildId!.Value);
-                        continue;
-                    }
-                    switch (acct.FinancialStatement)
-                    {
-                        case FinancialStatement.LIABILITY:
-                            // When you take out a loan, you receive cash (or an asset) and create a liability
-                            line.Amount = line.LiabilityAction != 0 ? line.LiabilityAction * Math.Abs(line.Amount) : line.Amount;
-                            break;
-                        case FinancialStatement.REVENUE:
-                            line.Amount = -1 * Math.Abs(line.Amount);
-                            break;
-                        case FinancialStatement.EXPENSE:
-                            break;
-                        case FinancialStatement.EQUITY:
-                            break;
-                        case FinancialStatement.ASSET:
-                            // TODO
-                            break;
-                        default:
-                            break;
-                    }
-                    var lineValue = line.Amount * (line.Quantity <= 0 ? 1 : line.Quantity);
-                    if (line.PaidWithCreditCard)
-                    {
-                        credit += lineValue;
-                    }
-                    else 
-                    {
-                        debit += lineValue;
-                    }
-                                    }
-                catch (Exception ex)
-                {
-                    Logger?.LogError(ex, "BalanceTransaction: failed while reading account for line account id {AccountId}", line.SelectedChildId!.Value);
-                }
-            }
-
-            // If not balanced beyond threshold, add compensating line
-            if (Math.Abs(debit) > 0.01m || Math.Abs(credit) > 0.01m)
-            {
-                try
-                {
-                    if (Math.Abs(debit) > 0.01m)
-                    {
-                        // Try to find a suitable cash/bank asset account by listing accounts and searching names
-                        var checkAccount = await AccountRepository.GetByNameAsync("Checking Account");
-                        if (checkAccount is null)
-                        {
-                            Logger?.LogWarning("BalanceTransaction: no cash/bank ASSET account found to auto-balance transaction (balance={Balance}).", debit);
-                            return;
-                        }
-                        var balance = decimal.Round(-debit, 2, MidpointRounding.ToEven);
-                        var compensating = new TransactionLineDTO
-                        {
-                            SelectedChildId = checkAccount.Id,
-                            Amount = balance,
-                            Description = "Auto-balance entry",
-                            Quantity = 1
-                        };
-                        TransactionLines.Add(compensating);
-                        Logger?.LogInformation("BalanceTransaction: added auto-balance line to account id {AccountId} amount {Amount}.", compensating.SelectedChildId, compensating.Amount);
-                    }
-                    if (Math.Abs(credit) > 0.01m)
-                    {
-                        var creditAccount = CreditCard;
-                        if (creditAccount is null || creditAccount.Id == 0)
-                        {
-                            Logger?.LogWarning("BalanceTransaction: no LIABILITY account found to auto-balance transaction (balance={Balance}).", credit);
-                            return;
-                        }
-                        var balance = decimal.Round(-credit, 2, MidpointRounding.ToEven);
-                        var compensating = new TransactionLineDTO
-                        {
-                            SelectedChildId = creditAccount.Id,
-                            Amount = balance,
-                            Description = "Auto-balance entry",
-                            Quantity = 1
-                        };
-                        TransactionLines.Add(compensating);
-                        Logger?.LogInformation("BalanceTransaction: added auto-balance line to account id {AccountId} amount {Amount}.", compensating.SelectedChildId, compensating.Amount);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Logger?.LogError(ex, "BalanceTransaction: failed to add compensating line for balance {Balance}", debit);
-                }
-            }
-        }
 
         protected async Task CreateTransaction()
         {
@@ -483,7 +378,7 @@ namespace FinancialApp.Components.Pages
                 return;
             }
 
-            await BalanceTransaction();
+            TransactionLines = await TransactionBalancingService.BalanceTransactionAsync(TransactionLines, Logger);
             var tx = BuildTransactionFromInputs();
             Logger?.LogDebug("CreateTransaction debug: {@Transaction}", tx);
 
