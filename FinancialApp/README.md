@@ -240,7 +240,7 @@ Under your accounting rules:
 - When you increase a liability (take out a loan), you CREDIT the liability account
 - When you decrease a liability (make a payment), you DEBIT the liability account
 
-**Scenario A: Taking Out a New Loan**
+**Scenario A: Taking Out a New Loan** 
 When you take out a loan, you receive cash (or an asset) and create a liability:
 ```
 -- Example: Taking out a $10,000 Auto Loan
@@ -253,7 +253,7 @@ INSERT INTO TransactionLines (TransactionId, AccountId, Amount, Description) VAL
 (1, (SELECT Id FROM Accounts WHERE Name='Auto Loan'), -10000.00, 'Auto loan balance');        -- CREDIT (-)
 ```
 
-**Scenario B: Making a Loan Payment**
+**Scenario B: Making a Loan Payment** 
 When you make a payment, it typically splits between:
 - Principal (reduces the liability)
 - Interest (an expense)
@@ -334,6 +334,29 @@ INSERT INTO TransactionLines (TransactionId, AccountId, Amount) VALUES
 -- Result: Balanced! (Debits = Credits)
 -- Debits: 200
 -- Credits: 200
+```
+
+# The Revenue Recording Flow
+
+**Scenario: User receives $20,000 salary** 
+Revenue accounts have a normal Credit balance (-) under your system, so when you earn money, you CREDIT the Revenue account.
+```
+-- User records the salary income:
+INSERT INTO TransactionLines (TransactionId, AccountId, Amount, Description) VALUES
+(1, (SELECT Id FROM Accounts WHERE Name='Salary'), -20000.00, 'Monthly salary');
+
+-- Transaction balance calculation:
+-- Salary (REVENUE) = -20000.00 (CREDIT)
+-- Balance = -20000.00 (needs balancing)
+
+-- System auto-balances with CASH/BANK (ASSET):
+INSERT INTO TransactionLines (TransactionId, AccountId, Amount, Description) VALUES
+(1, (SELECT Id FROM Accounts WHERE Name='Checking Account'), 20000.00, 'Auto-balance: Salary deposit');
+
+-- Result: BALANCED! ✅
+-- Debits: 20000.00 (Checking Account)
+-- Credits: 20000.00 (Salary)
+-- Debits = Credits ✓
 ```
 
 # Key Takeaway on balancing-out accounts

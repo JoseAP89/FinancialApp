@@ -154,7 +154,7 @@ INSERT INTO Accounts (Name, Description, FinancialStatement, ParentId, IsSystem)
 -- Liabilities subaccounts
 --------------------------------------------------------------------------------
 INSERT INTO Accounts (Name, Description, FinancialStatement, ParentId, IsSystem) VALUES
-('Credit Card',              'Credit card balances',                   'LIABILITY', (SELECT Id FROM Accounts WHERE Name='Liabilities' LIMIT 1), 1),
+('Credit Card',              'Credit card balances',                   'LIABILITY', (SELECT Id FROM Accounts WHERE Name='Liabilities' LIMIT 1), 0),
 ('Auto Loan',                'Auto loan principal',                    'LIABILITY', (SELECT Id FROM Accounts WHERE Name='Liabilities' LIMIT 1), 0),
 ('Student Loan',             'Student loan balances',                  'LIABILITY', (SELECT Id FROM Accounts WHERE Name='Liabilities' LIMIT 1), 0),
 ('Mortgage Loan',            'Mortgage principal',                     'LIABILITY', (SELECT Id FROM Accounts WHERE Name='Liabilities' LIMIT 1), 0),

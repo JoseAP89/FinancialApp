@@ -27,9 +27,11 @@ namespace FinancialApp.Components.Pages
         protected IToastService ToastService { get; set; } = null!;
 
 
-        protected List<Account> ParentAccounts { get; set; } = new List<Account>();
+        private Account CreditCard { get; set; } = null!;
 
-        protected List<Account> ChildAccounts { get; set; } = new List<Account>();
+        protected List<Account> ParentAccounts { get; set; } = [];
+
+        protected List<Account> ChildAccounts { get; set; } = [];
 
         private string TransactionDescription { get; set; } = string.Empty;
 
@@ -42,6 +44,7 @@ namespace FinancialApp.Components.Pages
             IsLoading = true;
             try
             {
+                CreditCard = await AccountRepository.GetByNameAsync("Credit Card") ?? new Account();
                 var parents = await AccountRepository.GetVisibleParentAccountsAsync();
                 ParentAccounts = parents?.ToList() ?? new List<Account>();
             }
@@ -62,10 +65,12 @@ namespace FinancialApp.Components.Pages
             if (int.TryParse(Convert.ToString(e.Value), out var id))
             {
                 line.SelectedChildId = id;
+                line.SelectedChild = await AccountRepository.GetByIdAsync(id);
             }
             else
             {
                 line.SelectedChildId = null;
+                line.SelectedChild = null;
                 // hide any child popover and stop its timer when selection cleared
                 if (line.ChildPopoverTimer is not null)
                 {
@@ -186,6 +191,7 @@ namespace FinancialApp.Components.Pages
                 // When the parent account changes, clear the previously selected sub-account
                 // so the user must explicitly choose a new sub-account for this line.
                 line.SelectedChildId = null;
+                line.SelectedChild = null;
                 // Also hide any child popover and stop its timer
                 if (line.ChildPopoverTimer is not null)
                 {
@@ -200,6 +206,7 @@ namespace FinancialApp.Components.Pages
                 line.SelectedParentId = null;
                 line.ChildAccounts = new List<Account>();
                 line.SelectedChildId = null;
+                line.SelectedChild = null;
                 // hide both popovers and stop timers
                 if (line.ParentPopoverTimer is not null)
                 {
@@ -365,35 +372,48 @@ namespace FinancialApp.Components.Pages
             if (TransactionLines == null) return;
 
             // Calculate current balance
-            decimal balance = 0m;
+            decimal debit = 0m;
             decimal credit = 0m;
 
             foreach (TransactionLineDTO line in TransactionLines)
             {
                 try
                 {
-                    var acct = await AccountRepository.GetByIdAsync(line.SelectedChildId!.Value);
+                    var acct = line.SelectedChild;
                     if (acct is null)
                     {
                         Logger?.LogWarning("BalanceTransaction: account id {AccountId} not found; skipping line in balance calc.", line.SelectedChildId!.Value);
                         continue;
                     }
+                    switch (acct.FinancialStatement)
+                    {
+                        case FinancialStatement.LIABILITY:
+                            // When you take out a loan, you receive cash (or an asset) and create a liability
+                            line.Amount = line.LiabilityAction != 0 ? line.LiabilityAction * Math.Abs(line.Amount) : line.Amount;
+                            break;
+                        case FinancialStatement.REVENUE:
+                            line.Amount = -1 * Math.Abs(line.Amount);
+                            break;
+                        case FinancialStatement.EXPENSE:
+                            break;
+                        case FinancialStatement.EQUITY:
+                            break;
+                        case FinancialStatement.ASSET:
+                            // TODO
+                            break;
+                        default:
+                            break;
+                    }
                     var lineValue = line.Amount * (line.Quantity <= 0 ? 1 : line.Quantity);
                     if (line.PaidWithCreditCard)
                     {
-                        credit += (-1*line.Amount);
+                        credit += lineValue;
                     }
-                    else if (acct.FinancialStatement == FinancialStatement.ASSET || acct.FinancialStatement == FinancialStatement.EXPENSE)
+                    else 
                     {
-                        // Debit
-                        balance += lineValue;
+                        debit += lineValue;
                     }
-                    else
-                    {
-                        // Credit
-                        balance -= lineValue;
-                    }
-                }
+                                    }
                 catch (Exception ex)
                 {
                     Logger?.LogError(ex, "BalanceTransaction: failed while reading account for line account id {AccountId}", line.SelectedChildId!.Value);
@@ -401,28 +421,24 @@ namespace FinancialApp.Components.Pages
             }
 
             // If not balanced beyond threshold, add compensating line
-            if (Math.Abs(balance) > 0.01m || Math.Abs(credit) > 0.01m)
+            if (Math.Abs(debit) > 0.01m || Math.Abs(credit) > 0.01m)
             {
                 try
                 {
-                    // Try to find a suitable cash/bank asset account by listing accounts and searching names
-                    var allAccounts = (await AccountRepository.ListAsync())?.ToList() ?? new List<Account>();
-                    if (Math.Abs(balance) > 0.01m)
+                    if (Math.Abs(debit) > 0.01m)
                     {
-                        var checkAccount = allAccounts
-                            .FirstOrDefault(a =>
-                                a.FinancialStatement == FinancialStatement.ASSET
-                                && (a.Name?.IndexOf("Checking Account", StringComparison.OrdinalIgnoreCase) >= 0)
-                            );
+                        // Try to find a suitable cash/bank asset account by listing accounts and searching names
+                        var checkAccount = await AccountRepository.GetByNameAsync("Checking Account");
                         if (checkAccount is null)
                         {
-                            Logger?.LogWarning("BalanceTransaction: no cash/bank ASSET account found to auto-balance transaction (balance={Balance}).", balance);
+                            Logger?.LogWarning("BalanceTransaction: no cash/bank ASSET account found to auto-balance transaction (balance={Balance}).", debit);
                             return;
                         }
+                        var balance = decimal.Round(-debit, 2, MidpointRounding.ToEven);
                         var compensating = new TransactionLineDTO
                         {
                             SelectedChildId = checkAccount.Id,
-                            Amount = decimal.Round(-balance, 2, MidpointRounding.ToEven),
+                            Amount = balance,
                             Description = "Auto-balance entry",
                             Quantity = 1
                         };
@@ -431,20 +447,17 @@ namespace FinancialApp.Components.Pages
                     }
                     if (Math.Abs(credit) > 0.01m)
                     {
-                        var creditAccount = allAccounts
-                            .FirstOrDefault(a =>
-                                a.FinancialStatement == FinancialStatement.LIABILITY
-                                && (a.Name?.IndexOf("Credit Card", StringComparison.OrdinalIgnoreCase) >= 0)
-                            );
-                        if (creditAccount is null)
+                        var creditAccount = CreditCard;
+                        if (creditAccount is null || creditAccount.Id == 0)
                         {
                             Logger?.LogWarning("BalanceTransaction: no LIABILITY account found to auto-balance transaction (balance={Balance}).", credit);
                             return;
                         }
+                        var balance = decimal.Round(-credit, 2, MidpointRounding.ToEven);
                         var compensating = new TransactionLineDTO
                         {
                             SelectedChildId = creditAccount.Id,
-                            Amount = decimal.Round(credit, 2, MidpointRounding.ToEven),
+                            Amount = balance,
                             Description = "Auto-balance entry",
                             Quantity = 1
                         };
@@ -454,7 +467,7 @@ namespace FinancialApp.Components.Pages
                 }
                 catch (Exception ex)
                 {
-                    Logger?.LogError(ex, "BalanceTransaction: failed to add compensating line for balance {Balance}", balance);
+                    Logger?.LogError(ex, "BalanceTransaction: failed to add compensating line for balance {Balance}", debit);
                 }
             }
         }
@@ -556,6 +569,13 @@ namespace FinancialApp.Components.Pages
         protected async Task OnLinePaidWithCreditCardChanged(ChangeEventArgs e, TransactionLineDTO line)
         {
             line.PaidWithCreditCard = Convert.ToBoolean(e.Value);
+            ClearValidation();
+            await InvokeAsync(StateHasChanged);
+        }
+
+        protected async Task OnLineLiabilityActionChanged(ChangeEventArgs e, TransactionLineDTO line)
+        {
+            line.LiabilityAction = Convert.ToInt32(e.Value);
             ClearValidation();
             await InvokeAsync(StateHasChanged);
         }

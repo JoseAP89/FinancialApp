@@ -97,12 +97,28 @@
                         <label class="form-label">Quantity</label>
                         <input class="form-control" type="number" name="quantity" min="1" step="1" value="@line.Quantity" @oninput="@(e => OnLineQuantityChanged(e, line))">
 
-                        <div class="mt-3">
-                            <input class="form-check-input" type="checkbox" value="@line.PaidWithCreditCard" @onchange="@(e => OnLinePaidWithCreditCardChanged(e, line))">
-                            <label class="form-check-label">
-                                Paid with credit card
-                            </label>
-                        </div>
+                        @if (line.SelectedChild is not null && line.SelectedChild.FinancialStatement == Data.Models.FinancialStatement.EXPENSE)
+                        {
+                            <div class="mt-3">
+                                <input class="form-check-input" type="checkbox" value="@line.PaidWithCreditCard" @onchange="@(e => OnLinePaidWithCreditCardChanged(e, line))">
+                                <label class="form-check-label">
+                                    Paid with credit card
+                                </label>
+                            </div>
+                        }
+                        else if (line.SelectedChild is not null && 
+                            line.SelectedChild.FinancialStatement == Data.Models.FinancialStatement.LIABILITY
+                        )
+                        {
+                            <div class="mt-3">
+                                <label>Choose an action:</label>
+                                <select class="form-select" value="@line.LiabilityAction" @onchange="@(e => OnLineLiabilityActionChanged(e, line))">
+                                    <option value="0">-- Select --</option>
+                                    <option value="-1">To Contract</option>
+                                    <option value="1">To Pay</option>
+                                </select>
+                            </div>
+                        }
 
                     </div>
                 </div>

@@ -14,12 +14,28 @@ namespace FinancialApp.Data.Repositories
 
         public async Task<Account?> GetByNameAsync(string name)
         {
-            return await _dbSet.FirstOrDefaultAsync(a => a.Name == name);
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                throw new ArgumentException("Account name cannot be null or whitespace.", nameof(name));
+            }
+
+            // Trim and normalize the search term
+            var normalizedName = name.Trim();
+
+            // Use case-insensitive search with collation or ToLower/ToUpper
+            // For SQL Server, you can use EF.Functions.Like or collation
+            return await _dbSet
+                .AsNoTracking() // Improves performance for read-only queries
+                .Where(a => a.Name != null && a.Name.ToUpper() == normalizedName.ToUpper())
+                // Or use EF.Functions for better performance:
+                // .Where(a => EF.Functions.Like(a.Name, normalizedName))
+                .FirstOrDefaultAsync();
         }
 
         public async Task<IEnumerable<Account>> GetAllParentAccountsAsync()
         {
             return await _dbSet
+                .AsNoTracking()
                 .Where(a => a.ParentId == null)
                 .OrderBy(a => a.Name)
                 .ToListAsync();
@@ -44,6 +60,7 @@ namespace FinancialApp.Data.Repositories
         public async Task<IEnumerable<Account>> GetVisibleParentAccountsAsync()
         {
             return await _dbSet
+                .AsNoTracking()
                 .Where(a => a.ParentId == null
                             && !a.IsSystem 
                             && a.FinancialStatement != FinancialStatement.EQUITY)
@@ -54,6 +71,7 @@ namespace FinancialApp.Data.Repositories
         public async Task<IEnumerable<Account>> GetVisibleChildAccountsByParentIdAsync(int parentId)
         {
             return await _dbSet
+                .AsNoTracking()
                 .Where(a => a.ParentId == parentId
                             && !a.IsSystem
                             && a.FinancialStatement != FinancialStatement.EQUITY)
