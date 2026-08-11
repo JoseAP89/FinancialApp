@@ -8,6 +8,7 @@ using Microsoft.Extensions.Logging;
 using FinancialApp.Data.Models;
 using FinancialApp.Data.Repositories;
 using FinancialApp.Core.DTOs;
+using FinancialApp.Infrastructure.Services;
 
 namespace FinancialApp.Components.Pages
 {
@@ -23,7 +24,8 @@ namespace FinancialApp.Components.Pages
         protected ITransactionRepository TransactionRepository { get; set; } = null!;
 
         [Inject]
-        protected Microsoft.JSInterop.IJSRuntime JSRuntime { get; set; } = null!;
+        protected IToastService ToastService { get; set; } = null!;
+
 
         protected List<Account> ParentAccounts { get; set; } = new List<Account>();
 
@@ -481,14 +483,14 @@ namespace FinancialApp.Components.Pages
                 await TransactionRepository.SaveChangesAsync();
 
                 // Show success toast (JS alert fallback)
-                try { await JSRuntime.InvokeAsync<object>("alert", new object?[] { "Transaction added successfully" }); } catch { }
+                ToastService.ShowSuccess("Transaction added successfully");
                 ClearTransactionPageState();
 
             }
             catch (Exception ex)
             {
                 Logger?.LogError(ex, "CreateTransaction failed while saving transaction.");
-                try { await JSRuntime.InvokeAsync<object>("alert", new object?[] { "There was an error with your request, try again." }); } catch { }
+                ToastService.ShowError("Failed to add transaction");
             }
             finally
             {
