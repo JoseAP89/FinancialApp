@@ -30,9 +30,18 @@
     else
     {
         <div id="total-transaction-value">
-            <div class="total-row">
-                <span class="total-lbl">Total</span>
-                <span class="total-value">@TotalTransactionValue.ToString("C")</span>
+            <div class="total-period-row">
+                <span class="total-lbl dotted-bottom">Total</span>
+                <span class="total-value dotted-bottom">@PeriodTransactionValue.ToString("C")</span>
+                <span class="total-lbl">Revenue</span>
+                <span class="total-value">@PeriodRevenue.ToString("C")</span>
+                <span class="total-lbl">Expenses</span>
+                <span class="total-value">@PeriodExpenses.ToString("C")</span>
+                @if (Math.Abs(PeriodLiabilities) > 0.001m)
+                {
+                    <span class="total-lbl">Liabilities</span>
+                    <span class="total-value">@PeriodLiabilities.ToString("C")</span>
+                }
             </div>
             <div class="date-range">@StartDate?.ToString("MMM dd, yyyy") - @EndDate?.ToString("MMM dd, yyyy")</div>
         </div>
@@ -55,7 +64,6 @@
                             {
                                 <li class="expense-item">
                                     <span class="item-name">
-                                        <i class="fas fa-circle-notch"></i>
                                         @(line.Description ?? "Transaction line")
                                         <span class="item-qty">x@(line.Quantity <= 0 ? 1 : line.Quantity)</span>
                                     </span>

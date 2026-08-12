@@ -20,7 +20,10 @@ namespace FinancialApp.Components.Pages
         protected IEnumerable<Transaction> FilteredTransactions { get; set; } = Enumerable.Empty<Transaction>();
 
         protected bool IsLoading { get; set; }
-        protected decimal TotalTransactionValue { get; set; }
+        protected decimal PeriodTransactionValue { get; set; }
+        protected decimal PeriodExpenses { get; set; }
+        protected decimal PeriodLiabilities { get; set; }
+        protected decimal PeriodRevenue { get; set; }
 
         // Track visibility state for each transaction's expense list (initially hidden)
         protected HashSet<int> ExpandedTransactions { get; set; } = new HashSet<int>();
@@ -43,9 +46,7 @@ namespace FinancialApp.Components.Pages
                 // include entire day for end
                 end = end.AddDays(1).AddTicks(-1);
                 EndDateString = end.ToString("yyyy-MM-dd");
-                var items = await TransactionRepository.ListWithNoSystemLinesByDateRangeAsync(StartDate!.Value, end);
-                FilteredTransactions = items?.ToList() ?? [];
-                TotalTransactionValue = GetTotalTransactionValue(FilteredTransactions); 
+                await ApplyFilter();
             }
             catch (Exception ex)
             {
@@ -73,8 +74,20 @@ namespace FinancialApp.Components.Pages
             end = end.AddDays(1).AddTicks(-1);
 
             var items = await TransactionRepository.ListWithNoSystemLinesByDateRangeAsync(start, end);
-            FilteredTransactions = items?.ToList() ?? [];
-            TotalTransactionValue = GetTotalTransactionValue(FilteredTransactions);
+            FilteredTransactions = items
+                 ?.Select(t => new Transaction
+                 {
+                     Id = t.Id,
+                     Description = t.Description,
+                     Date = t.Date,
+                     // Filter only lines where account amount > 500
+                     TransactionLines = t.TransactionLines?
+                        .Where(line => line.Description != null && !line.Description.Contains("Auto-balance entry"))
+                        .ToList() ?? []
+                 })
+            .Where(t => t.TransactionLines.Any())
+            .ToList() ?? [];
+            GetSubTotalTransactionValues(FilteredTransactions);
         }
 
         protected void ResetFilter()
@@ -82,21 +95,42 @@ namespace FinancialApp.Components.Pages
             StartDateString = null;
             EndDateString = null;
             FilteredTransactions = [];
-            TotalTransactionValue = 0;
+            PeriodTransactionValue = 0;
+            PeriodExpenses = 0;
+            PeriodLiabilities = 0;
+            PeriodRevenue = 0;
         }
 
-        protected decimal GetTotalTransactionValue(IEnumerable<Transaction> transactions)
+        protected void GetSubTotalTransactionValues(IEnumerable<Transaction> transactions)
         {
-            decimal total = 0;
+            decimal subtotal = 0;
+            decimal subexpenses = 0;
+            decimal subliabilities = 0;
+            decimal subrevenue = 0;
             foreach (var transaction in transactions)
             {
                 foreach (var line in transaction.TransactionLines)
                 {
                     var qty = line.Quantity <= 0 ? 1 : line.Quantity;
-                    total += line.Amount * qty;
+                    subtotal += line.Amount * qty;
+                    if (line?.Account?.FinancialStatement == FinancialStatement.EXPENSE)
+                    {
+                        subexpenses += line.Amount * qty;
+                    }
+                    if (line?.Account?.FinancialStatement == FinancialStatement.LIABILITY)
+                    {
+                        subliabilities += line.Amount * qty;
+                    }
+                    if (line?.Account?.FinancialStatement == FinancialStatement.REVENUE)
+                    {
+                        subrevenue += line.Amount * qty;
+                    }
                 }
             }
-            return total;
+            PeriodTransactionValue = subtotal;
+            PeriodExpenses = subexpenses;
+            PeriodLiabilities = subliabilities;
+            PeriodRevenue = subrevenue;
         }
 
         protected void OnStartDateChanged(ChangeEventArgs e)

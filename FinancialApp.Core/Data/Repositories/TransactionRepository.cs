@@ -65,6 +65,7 @@ namespace FinancialApp.Data.Repositories
                 .AsNoTracking()
                 .Where(t => t.Date >= start && t.Date <= endInclusive)
                 .Include(t => t.TransactionLines.Where(l => l.Account != null && !l.Account.IsSystem))
+                    .ThenInclude(l => l.Account)
                 .OrderByDescending(t => t.Date)
                 .ToListAsync();
         }
