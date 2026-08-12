@@ -1,4 +1,7 @@
 ﻿using FinancialApp.Data.Models;
+using System;
+using System.Collections.Generic;
+using System.Text;
 
 namespace FinancialApp.Core.DTOs;
 

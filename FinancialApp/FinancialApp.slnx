@@ -1,4 +1,6 @@
 <Solution>
+  <Project Path="../FinancialApp.Core/FinancialApp.Core.csproj" Id="d7143a5f-ed03-4dca-a168-adc77c94d4a1" />
+  <Project Path="../FinancialApp.Tests/FinancialApp.Tests.csproj" Id="f2cd4c01-71a2-453e-9827-c4a13e930d06" />
   <Project Path="FinancialApp.csproj">
     <Deploy Solution="Debug|*" />
   </Project>
